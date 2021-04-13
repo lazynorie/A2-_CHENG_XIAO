@@ -18,8 +18,7 @@ using namespace DirectX::PackedVector;
 #pragma comment(lib, "D3D12.lib")
 
 const int gNumFrameResources = 3;
-const float width = 50;
-const float depth = 50;
+
 
 enum class RenderLayer : int
 {
@@ -507,26 +506,26 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
     //lights
 	mMainPassCB.AmbientLight = { 0.4f, 0.4f, 0.4f, 1.0f };
     //directional light
-	mMainPassCB.Lights[0].Direction = { -0.5f, -0.35f, 0.5f };
+	mMainPassCB.Lights[0].Direction = { -0.0f, -0.35f, 0.0f };
 	mMainPassCB.Lights[0].Strength = { 0.8f, 0.5, 0.3f };
     //pointlights
 	mMainPassCB.Lights[1].Position = { -5.0f, 5.0f, -26.0f };
 	mMainPassCB.Lights[1].Strength = { 1.0f, 1.0f, 0.0f };
 	mMainPassCB.Lights[2].Position = { 5.0f, 5.0f, -26.0f };
 	mMainPassCB.Lights[2].Strength = { 1.0f, 1.0f, 0.0f };
-	//back rainbow pointlights
-	//yellow
-    mMainPassCB.Lights[3].Position = { -5.0f, 5.0f, 49.0f };
-	mMainPassCB.Lights[3].Strength = { 1.0f, 1.0f, 0.0f };
+	
+	//red
+	mMainPassCB.Lights[3].Position = { 20.0f, 5.0f, 20.0f };
+	mMainPassCB.Lights[3].Strength = { 1.0f, 0.0f, 0.0f };
 	//green
-    mMainPassCB.Lights[4].Position = { 5.0f, 5.0f, 49.0f };
+    mMainPassCB.Lights[4].Position = { 20.0f, 5.0f, -20.0f };
 	mMainPassCB.Lights[4].Strength = { 0.0f, 1.0f, 0.0f };
 	//red
-	mMainPassCB.Lights[5].Position = { -10.0f, 5.0f, 49.0f };
+	mMainPassCB.Lights[5].Position = { -20.0f, 5.0f, 20.0f };
 	mMainPassCB.Lights[5].Strength = { 1.0f, 0.0f, 0.0f };
 
 	//blue
-	mMainPassCB.Lights[6].Position = { 10.0f, 5.0f, 49.0f };
+	mMainPassCB.Lights[6].Position = { -20.0f, 5.0f, -20.0f };
 	mMainPassCB.Lights[6].Strength = { 0.0, 0.0f, 1.0f };
 
 	//cyan
@@ -537,7 +536,7 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.Lights[8].Position = { -15.0f, 5.0f, 49.0f };
 	mMainPassCB.Lights[8].Strength = { 1.0, 0.0f, 1.0f };
     //spotlight
-    mMainPassCB.Lights[9].Position = { 0.0f, 22.0f, 10.0f };
+    mMainPassCB.Lights[9].Position = { 0.0f, 15.0f, 0.0f };
     mMainPassCB.Lights[9].Direction = { 0.0f, -1.0f, 0.0f };
     mMainPassCB.Lights[9].SpotPower =  1.0f;
     mMainPassCB.Lights[9].Strength = { 2.1f, 2.1f, 2.1f };
@@ -591,12 +590,12 @@ void ShapesApp::LoadTextures()
 		mCommandList.Get(), redTex->Filename.c_str(),
 		redTex->Resource, redTex->UploadHeap));
 
-	auto flagTex = std::make_unique<Texture>();
+	/*auto flagTex = std::make_unique<Texture>();
 	flagTex->Name = "flagTex";
 	flagTex->Filename = L"Textures/canada.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), flagTex->Filename.c_str(),
-        flagTex->Resource, flagTex->UploadHeap));
+        flagTex->Resource, flagTex->UploadHeap));*/
 
 	auto fenceTex = std::make_unique<Texture>();
 	fenceTex->Name = "fenceTex";
@@ -633,7 +632,7 @@ void ShapesApp::LoadTextures()
 	mTextures[waterTex->Name] = std::move(waterTex);
 	mTextures[iceTex->Name] = std::move(iceTex);
 	mTextures[redTex->Name] = std::move(redTex);
-	mTextures[flagTex->Name] = std::move(flagTex);
+	//mTextures[flagTex->Name] = std::move(flagTex);
 	mTextures[fenceTex->Name] = std::move(fenceTex);
 	mTextures[treeArrayTex->Name] = std::move(treeArrayTex);
 	mTextures[CoralTex->Name] = std::move(CoralTex);
@@ -869,9 +868,9 @@ void ShapesApp::BuildShapeGeometry()
 {
     GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
-	GeometryGenerator::MeshData grid = geoGen.CreateGrid(40, 60 , 60 , 40);
-	GeometryGenerator::MeshData waterGrid = geoGen.CreateGrid(width * 2, depth * 2, 60 * 2, 40);
-    GeometryGenerator::MeshData sandDunes = geoGen.CreateGrid(width * 4, depth * 4, 60 * 4, 40);
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(90, 150 , 60 , 40);
+	GeometryGenerator::MeshData waterGrid = geoGen.CreateGrid(100, 100, 60 * 2, 40);
+    GeometryGenerator::MeshData sandDunes = geoGen.CreateGrid(200, 200, 60 * 4, 40);
 	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.5f, 2.0f, 20, 20);
 	GeometryGenerator::MeshData cone = geoGen.CreateCone(0.5f, 1.0f, 20, 1);
@@ -1463,7 +1462,7 @@ void ShapesApp::BuildRenderItems()
 
 	float nintydegrees = XM_2PI / 4;
 	float x1, z1;  //using trig to change b/w x axis and z axix
-	x1 = z1 = 10;
+	x1 = z1 = 20;
 	float radius = sqrt(x1 * x1 + z1 * z1);
 
    
@@ -1522,8 +1521,8 @@ void ShapesApp::BuildRenderItems()
 			auto FrontWallRitem = std::make_unique<RenderItem>();
 			auto walltopRitem = std::make_unique<RenderItem>();
 
-			XMMATRIX FrontWallWorld = XMMatrixScaling(7.0f, 5.0f, 1.0f) * XMMatrixTranslation(5.0f - 10 * i, 2.5f, -10.0f);
-			XMMATRIX walltopWorld = XMMatrixScaling(20.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 5.3f, -10.0f);
+			XMMATRIX FrontWallWorld = XMMatrixScaling(16.0f, 5.0f, 1.0f) * XMMatrixTranslation(  -12 + 24*i , 2.5f, -20.0f);
+			XMMATRIX walltopWorld = XMMatrixScaling(40.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 5.3f, -20.0f);
 
 			SetRenderItemInfo(*FrontWallRitem, "box", FrontWallWorld, "bricks0", RenderLayer::Opaque);
 			SetRenderItemInfo(*walltopRitem, "prism", walltopWorld, "bricks0", RenderLayer::Opaque);
@@ -1546,8 +1545,8 @@ void ShapesApp::BuildRenderItems()
 			auto wallRitem = std::make_unique<RenderItem>();
 			auto walltopRitem = std::make_unique<RenderItem>();
 
-			XMMATRIX wallWorld = XMMatrixScaling(1.0f, 5.0f, 20.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 2.5f, sinR);
-			XMMATRIX walltopWorld = XMMatrixScaling(2.0f, 1.0f, 20.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 5.0f, sinR);
+			XMMATRIX wallWorld = XMMatrixScaling(1.0f, 5.0f, 40.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 2.5f, sinR);
+			XMMATRIX walltopWorld = XMMatrixScaling(2.0f, 1.0f, 40.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 5.0f, sinR);
 
 			SetRenderItemInfo(*wallRitem, "box", wallWorld, "bricks0", RenderLayer::Opaque);
 			SetRenderItemInfo(*walltopRitem, "box", walltopWorld, "bricks0", RenderLayer::Opaque);
@@ -1570,7 +1569,7 @@ void ShapesApp::BuildRenderItems()
 			auto wall2Ritem = std::make_unique<RenderItem>();
 			//auto walltopRitem = std::make_unique<RenderItem>();
 
-			XMMATRIX wall2World = XMMatrixScaling(1.0f, 5.0f, 20.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 2.5f, -sinR -20);
+			XMMATRIX wall2World = XMMatrixScaling(1.0f, 5.0f, 40.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 2.5f, -sinR -40);
 			//XMMATRIX walltopWorld = XMMatrixScaling(2.0f, 1.0f, 20.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 5.0f, sinR);
 
 			SetRenderItemInfo(*wall2Ritem, "box", wall2World, "grass0", RenderLayer::Opaque);
@@ -1583,17 +1582,17 @@ void ShapesApp::BuildRenderItems()
 	}
 
 	//battlements
-	for (int i = 0; i < 11; i++)
+	for (int i = 0; i < 21; i++)
 	{
 		auto brick1Ritem = std::make_unique<RenderItem>();
 		auto brick2Ritem = std::make_unique<RenderItem>();
 		auto brick3Ritem = std::make_unique<RenderItem>();
 		auto brick4Ritem = std::make_unique<RenderItem>();
 
-		XMMATRIX brick1World = XMMatrixScaling(1.0f, 1.5f, 1.0f) * XMMatrixTranslation(-10.0f, 5.5f, 10.0f - 2 * i);
-		XMMATRIX brick2World = XMMatrixScaling(1.0f, 1.5f, 1.0f) * XMMatrixTranslation(10.0f, 5.5f, 10.0f - 2 * i);
-		XMMATRIX brick3World = XMMatrixScaling(1.0f, 1.5f, 1.0f) * XMMatrixTranslation(10.0f - 2 * i, 5.5f, 10.0f);
-		XMMATRIX brick4World = XMMatrixScaling(1.0f, 1.5f, 1.0f) * XMMatrixTranslation(10.0f - 2 * i, 5.5f, -10.0f);
+		XMMATRIX brick1World = XMMatrixScaling(1.0f, 1.5f, 1.0f) * XMMatrixTranslation(-20.0f, 5.5f, 20.0f - 2 * i);
+		XMMATRIX brick2World = XMMatrixScaling(1.0f, 1.5f, 1.0f) * XMMatrixTranslation(20.0f, 5.5f, 20.0f - 2 * i);
+		XMMATRIX brick3World = XMMatrixScaling(1.0f, 1.5f, 1.0f) * XMMatrixTranslation(20.0f - 2 * i, 5.5f, 20.0f);
+		XMMATRIX brick4World = XMMatrixScaling(1.0f, 1.5f, 1.0f) * XMMatrixTranslation(20.0f - 2 * i, 5.5f, -20.0f);
 
 		SetRenderItemInfo(*brick1Ritem, "box", brick1World, "stone0", RenderLayer::Opaque);
 		SetRenderItemInfo(*brick2Ritem, "box", brick2World, "stone0", RenderLayer::Opaque);
@@ -1612,12 +1611,12 @@ void ShapesApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(diamondRitem));
 
 	auto wedgeRitem = std::make_unique<RenderItem>();
-	XMMATRIX wedgeWorld = XMMatrixScaling(5.0f, 1.0f, 1.5f) * XMMatrixRotationY(-nintydegrees) * XMMatrixTranslation(0.0f, 0.5f, -12.5f);
+	XMMATRIX wedgeWorld = XMMatrixScaling(5.0f, 1.0f, 5.0f) * XMMatrixRotationY(-nintydegrees) * XMMatrixTranslation(0.0f, 0.5f, -23.0f);
 	SetRenderItemInfo(*wedgeRitem, "wedge", wedgeWorld, "wirefence", RenderLayer::Transparent);
 	mAllRitems.push_back(std::move(wedgeRitem));
 
 	auto pyramidRitem = std::make_unique<RenderItem>();
-	XMMATRIX pyramidWorld = XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixRotationY(-nintydegrees) * XMMatrixTranslation(0.0f, 0.5f, 0.0f);
+	XMMATRIX pyramidWorld = XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixRotationY(-nintydegrees) * XMMatrixTranslation(0.0f, 0.5f, 0.0f);
 	SetRenderItemInfo(*pyramidRitem, "pyramid", pyramidWorld, "stone0", RenderLayer::Transparent);
 	mAllRitems.push_back(std::move(pyramidRitem));
 
@@ -1637,22 +1636,6 @@ void ShapesApp::BuildRenderItems()
 	SetRenderItemInfo(*waterRitem, "grid", WaterWorld, "water0", RenderLayer::Transparent);
 	mAllRitems.push_back(std::move(waterRitem));
 
-   
-	//auto baseRitem = std::make_unique<RenderItem>();
- //   XMMATRIX baseWorld = XMMatrixScaling(20.75f, 4.5f, 20.75f) * XMMatrixTranslation(0.0f, 2.25f, 13.0f);
- //   SetRenderItemInfo(*baseRitem, "box", baseWorld, "sand0", RenderLayer::Opaque);
- //   mAllRitems.push_back(std::move(baseRitem));
-
- //   auto diamondRitem = std::make_unique<RenderItem>();
- //   XMMATRIX DiamondWorld = XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(0.0f, 13.0f, 13.0f);
- //   SetRenderItemInfo(*diamondRitem, "diamond", DiamondWorld, "ice0", RenderLayer::Transparent);
- //   mAllRitems.push_back(std::move(diamondRitem));
-
- //   auto RingRitem = std::make_unique<RenderItem>();
- //   XMMATRIX RingWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationX(1.571) * XMMatrixTranslation(0.0f, 11.75f, 13.0f);
- //   SetRenderItemInfo(*RingRitem, "torus", RingWorld, "stone0", RenderLayer::Opaque);
- //   mAllRitems.push_back(std::move(RingRitem));
- //   
  //   for (int i = 0; i < 2; i++)
  //   {
  //       auto wedgeRitem = std::make_unique<RenderItem>();
@@ -1673,17 +1656,17 @@ void ShapesApp::BuildRenderItems()
 	//mAllRitems.push_back(std::move(boxRitem));
 	//
 
-	//auto coralSpritesRitem = std::make_unique<RenderItem>();
-	//coralSpritesRitem->World = MathHelper::Identity4x4();
-	//coralSpritesRitem->ObjCBIndex = objCBIndex++;
-	//coralSpritesRitem->Mat = mMaterials["coralSprite"].get();
-	//coralSpritesRitem->Geo = mGeometries["treeSpritesGeo"].get();
-	//coralSpritesRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
-	//coralSpritesRitem->IndexCount = coralSpritesRitem->Geo->DrawArgs["points"].IndexCount;
-	//coralSpritesRitem->StartIndexLocation = coralSpritesRitem->Geo->DrawArgs["points"].StartIndexLocation;
-	//coralSpritesRitem->BaseVertexLocation = coralSpritesRitem->Geo->DrawArgs["points"].BaseVertexLocation;
-	//mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites].push_back(coralSpritesRitem.get());
-	//mAllRitems.push_back(std::move(coralSpritesRitem));
+	/*auto coralSpritesRitem = std::make_unique<RenderItem>();
+	coralSpritesRitem->World = MathHelper::Identity4x4();
+	coralSpritesRitem->ObjCBIndex = objCBIndex++;
+	coralSpritesRitem->Mat = mMaterials["coralSprite"].get();
+	coralSpritesRitem->Geo = mGeometries["treeSpritesGeo"].get();
+	coralSpritesRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+	coralSpritesRitem->IndexCount = coralSpritesRitem->Geo->DrawArgs["points"].IndexCount;
+	coralSpritesRitem->StartIndexLocation = coralSpritesRitem->Geo->DrawArgs["points"].StartIndexLocation;
+	coralSpritesRitem->BaseVertexLocation = coralSpritesRitem->Geo->DrawArgs["points"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites].push_back(coralSpritesRitem.get());
+	mAllRitems.push_back(std::move(coralSpritesRitem));*/
 
 
 
