@@ -529,11 +529,11 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.Lights[6].Strength = { 0.0, 0.0f, 1.0f };
 
 	//cyan
-	mMainPassCB.Lights[7].Position = { 15.0f, 5.0f, 49.0f };
+	mMainPassCB.Lights[7].Position = { 10.0f, 10.0f, 10.0f };
 	mMainPassCB.Lights[7].Strength = { 0.0, 1.0f, 1.0f };
 
 	//purple
-	mMainPassCB.Lights[8].Position = { -15.0f, 5.0f, 49.0f };
+	mMainPassCB.Lights[8].Position = { -10.0f, 10.0f, 10.0f };
 	mMainPassCB.Lights[8].Strength = { 1.0, 0.0f, 1.0f };
     //spotlight
     mMainPassCB.Lights[9].Position = { 0.0f, 15.0f, 0.0f };
@@ -590,12 +590,6 @@ void ShapesApp::LoadTextures()
 		mCommandList.Get(), redTex->Filename.c_str(),
 		redTex->Resource, redTex->UploadHeap));
 
-	/*auto flagTex = std::make_unique<Texture>();
-	flagTex->Name = "flagTex";
-	flagTex->Filename = L"Textures/canada.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), flagTex->Filename.c_str(),
-        flagTex->Resource, flagTex->UploadHeap));*/
 
 	auto fenceTex = std::make_unique<Texture>();
 	fenceTex->Name = "fenceTex";
@@ -632,7 +626,6 @@ void ShapesApp::LoadTextures()
 	mTextures[waterTex->Name] = std::move(waterTex);
 	mTextures[iceTex->Name] = std::move(iceTex);
 	mTextures[redTex->Name] = std::move(redTex);
-	//mTextures[flagTex->Name] = std::move(flagTex);
 	mTextures[fenceTex->Name] = std::move(fenceTex);
 	mTextures[treeArrayTex->Name] = std::move(treeArrayTex);
 	mTextures[CoralTex->Name] = std::move(CoralTex);
@@ -1165,28 +1158,23 @@ void ShapesApp::BuildTreeSpritesGeometry()
 	};
 
 	const float m_size = 15.0f;
-	const float m_halfHeight = m_size/3.0f;   //the texture has empty space, 2.4 works better for the actual tree height
+	const float m_halfHeight = m_size/2.4f;   //the texture has empty space, 2.4 works better for the actual tree height
 
 	static const int treeCount = 20;
 	std::array<TreeSpriteVertex, treeCount> vertices;
 	//left side trees
-	for(UINT i = 0; i < treeCount*0.3; ++i)
+	for(UINT i = 0; i < treeCount*0.5; ++i)
 	{
-		vertices[i].Pos = GetTreePosition(-80, -55, -70, 80, m_halfHeight);
+		vertices[i].Pos = GetTreePosition(-40, -30, -60, 30, m_halfHeight);
 		vertices[i].Size = XMFLOAT2(m_size, m_size);
 	}
 	//right side trees
-	for(UINT i = treeCount*0.3; i < treeCount*0.7; ++i)
+	for(UINT i = treeCount*0.5; i < treeCount; ++i)
 	{
-		vertices[i].Pos = vertices[i].Pos = GetTreePosition(55, 80, -70, 80, m_halfHeight);
+		vertices[i].Pos = vertices[i].Pos = GetTreePosition(30, 40, -60, 30, m_halfHeight);
 		vertices[i].Size = XMFLOAT2(m_size, m_size);
 	}
-	//top side trees
-	for(UINT i = treeCount*0.7; i < treeCount; ++i)
-	{
-		vertices[i].Pos = vertices[i].Pos = GetTreePosition(-50, 50, 55, 80, m_halfHeight);
-		vertices[i].Size = XMFLOAT2(m_size, m_size);
-	}
+	
 	
 
 	std::array<std::uint16_t, treeCount> indices =
@@ -1345,8 +1333,8 @@ void ShapesApp::BuildMaterials()
 	bricks0->MatCBIndex = 0;
 	bricks0->DiffuseSrvHeapIndex = 0;
 	bricks0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	bricks0->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	bricks0->Roughness = 0.9f;
+	bricks0->FresnelR0 = XMFLOAT3(1.2f, 1.2f, 0.2f);
+	bricks0->Roughness = 0.5f;
 
 	
 
@@ -1656,7 +1644,7 @@ void ShapesApp::BuildRenderItems()
 	//mAllRitems.push_back(std::move(boxRitem));
 	//
 
-	/*auto coralSpritesRitem = std::make_unique<RenderItem>();
+	auto coralSpritesRitem = std::make_unique<RenderItem>();
 	coralSpritesRitem->World = MathHelper::Identity4x4();
 	coralSpritesRitem->ObjCBIndex = objCBIndex++;
 	coralSpritesRitem->Mat = mMaterials["coralSprite"].get();
@@ -1666,7 +1654,7 @@ void ShapesApp::BuildRenderItems()
 	coralSpritesRitem->StartIndexLocation = coralSpritesRitem->Geo->DrawArgs["points"].StartIndexLocation;
 	coralSpritesRitem->BaseVertexLocation = coralSpritesRitem->Geo->DrawArgs["points"].BaseVertexLocation;
 	mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites].push_back(coralSpritesRitem.get());
-	mAllRitems.push_back(std::move(coralSpritesRitem));*/
+	mAllRitems.push_back(std::move(coralSpritesRitem));
 
 
 
@@ -1790,11 +1778,7 @@ XMFLOAT3 ShapesApp::GetTreePosition(float minX, float maxX, float minZ, float ma
 
 		pos.x = MathHelper::RandF(minX, maxX);
 		pos.z = MathHelper::RandF(minZ, maxZ);
-		pos.y = GetHillsHeight(pos.x, pos.z);
-	
-	
-	// Move tree slightly above land height.
-	pos.y += treeHeightOffset - 4;
+		pos.y = 6.0f;
 
 	return pos;
 }
