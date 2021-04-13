@@ -653,7 +653,7 @@ void ShapesApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 11;
+	srvHeapDesc.NumDescriptors = 10;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -669,7 +669,7 @@ void ShapesApp::BuildDescriptorHeaps()
 	auto redTex = mTextures["redTex"]->Resource;
 	auto waterTex = mTextures["waterTex"]->Resource;
 	auto iceTex = mTextures["iceTex"]->Resource;
-	auto flagTex = mTextures["flagTex"]->Resource;
+	//auto flagTex = mTextures["flagTex"]->Resource;
 	auto grassTex = mTextures["grassTex"]->Resource;
 	auto fenceTex = mTextures["fenceTex"]->Resource;
 	auto treeArrayTex = mTextures["treeArrayTex"]->Resource;
@@ -732,9 +732,9 @@ void ShapesApp::BuildDescriptorHeaps()
 	// next descriptor
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 
-	srvDesc.Format = flagTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = flagTex->GetDesc().MipLevels;
-	md3dDevice->CreateShaderResourceView(flagTex.Get(), &srvDesc, hDescriptor);
+	srvDesc.Format = grassTex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = grassTex->GetDesc().MipLevels;
+	md3dDevice->CreateShaderResourceView(grassTex.Get(), &srvDesc, hDescriptor);
 
 
 	
@@ -1391,13 +1391,13 @@ void ShapesApp::BuildMaterials()
 	Ice0->FresnelR0 = XMFLOAT3(1.0f, 1.0f, 1.0f);
 	Ice0->Roughness = 0.1f;
 
-	auto flag0 = std::make_unique<Material>();
-	flag0->Name = "flag0";
-	flag0->MatCBIndex = 6;
-	flag0->DiffuseSrvHeapIndex = 6;
-	flag0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	flag0->FresnelR0 = XMFLOAT3(0.2f, 0.2f, 0.2f);
-	flag0->Roughness = 0.7f;
+	auto grass0 = std::make_unique<Material>();
+	grass0->Name = "grass0";
+	grass0->MatCBIndex = 6;
+	grass0->DiffuseSrvHeapIndex = 6;
+	grass0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	grass0->FresnelR0 = XMFLOAT3(0.2f, 0.2f, 0.2f);
+	grass0->Roughness = 0.7f;
 
 	auto wirefence = std::make_unique<Material>();
 	wirefence->Name = "wirefence";
@@ -1423,13 +1423,7 @@ void ShapesApp::BuildMaterials()
 	coralSprite->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	coralSprite->Roughness = 0.125f;
 
-	auto grass0 = std::make_unique<Material>();
-	grass0->Name = "grass0";
-	grass0->MatCBIndex = 10;
-	grass0->DiffuseSrvHeapIndex = 10;
-	grass0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	grass0->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	grass0->Roughness = 0.9f;
+	
 
 	mMaterials["bricks0"] = std::move(bricks0);
 	mMaterials["stone0"] = std::move(stone0);
@@ -1437,7 +1431,6 @@ void ShapesApp::BuildMaterials()
 	mMaterials["ice0"] = std::move(Ice0);
 	mMaterials["water0"] = std::move(Water0);
 	mMaterials["sand0"] = std::move(sand0);
-	mMaterials["flag0"] = std::move(flag0);
 	mMaterials["wirefence"] = std::move(wirefence);
 	mMaterials["treeSprites"] = std::move(treeSprites);	
 	mMaterials["coralSprite"] = std::move(coralSprite);
@@ -1505,7 +1498,7 @@ void ShapesApp::BuildRenderItems()
 
         SetRenderItemInfo(*ttopRitem, "cone", ttopWorld, "bricks0", RenderLayer::Opaque);
 
-		SetRenderItemInfo(*donutRitem, "torus", donutWorld, "flag0", RenderLayer::Opaque);
+		SetRenderItemInfo(*donutRitem, "torus", donutWorld, "sand0", RenderLayer::Opaque);
 
        
    
