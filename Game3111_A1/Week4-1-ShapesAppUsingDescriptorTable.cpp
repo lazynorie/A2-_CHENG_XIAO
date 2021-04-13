@@ -1594,7 +1594,7 @@ void ShapesApp::BuildRenderItems()
 	}
 
 	auto diamondRitem = std::make_unique<RenderItem>();
-	XMMATRIX DiamondWorld = XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(0.0f, 3.5f, 0.0f);
+	XMMATRIX DiamondWorld = XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(0.0f, 4.5f, 0.0f);
 	SetRenderItemInfo(*diamondRitem, "diamond", DiamondWorld, "ice0", RenderLayer::Transparent);
 	mAllRitems.push_back(std::move(diamondRitem));
 
@@ -1604,19 +1604,9 @@ void ShapesApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(wedgeRitem));
 
 	auto pyramidRitem = std::make_unique<RenderItem>();
-	XMMATRIX pyramidWorld = XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixRotationY(-nintydegrees) * XMMatrixTranslation(0.0f, 0.5f, 0.0f);
+	XMMATRIX pyramidWorld = XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixRotationY(-nintydegrees) * XMMatrixTranslation(0.0f, 1.5f, 0.0f);
 	SetRenderItemInfo(*pyramidRitem, "pyramid", pyramidWorld, "stone0", RenderLayer::Transparent);
 	mAllRitems.push_back(std::move(pyramidRitem));
-
-    
-    
-	
-    
-
-	/*auto sandDunesRitem = std::make_unique<RenderItem>();
-	XMMATRIX sandDunesWorld = XMMatrixTranslation(0, -3, 0);
-	SetRenderItemInfo(*sandDunesRitem, "sandDunes", sandDunesWorld, "sand0", RenderLayer::Opaque);
-	mAllRitems.push_back(std::move(sandDunesRitem));*/
 
 
 	auto waterRitem = std::make_unique<RenderItem>();
