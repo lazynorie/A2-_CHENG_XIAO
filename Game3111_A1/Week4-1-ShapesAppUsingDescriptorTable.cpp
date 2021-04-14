@@ -570,42 +570,37 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 
     //lights
 	mMainPassCB.AmbientLight = { 0.4f, 0.4f, 0.4f, 1.0f };
-    //directional light
-	mMainPassCB.Lights[0].Direction = { -0.0f, -0.35f, 0.0f };
+    
+	mMainPassCB.Lights[0].Direction = { -0.0f, -1.0f, 0.0f };
 	mMainPassCB.Lights[0].Strength = { 0.8f, 0.5, 0.3f };
-    //pointlights
-	mMainPassCB.Lights[1].Position = { -5.0f, 5.0f, -26.0f };
-	mMainPassCB.Lights[1].Strength = { 1.0f, 1.0f, 0.0f };
-	mMainPassCB.Lights[2].Position = { 5.0f, 5.0f, -26.0f };
-	mMainPassCB.Lights[2].Strength = { 1.0f, 1.0f, 0.0f };
+   
+	mMainPassCB.Lights[1].Position = { 0.0f, 6.0f, 0.0f };
+	mMainPassCB.Lights[1].Strength = { 0.0f, 0.0f, 1.5f };
+
+
+	mMainPassCB.Lights[2].Position = { 0.0f, 5.0f, -20.0f };
+	mMainPassCB.Lights[2].Strength = { 1.0f, 1.0f, 1.0f };
 	
-	//red
+	
 	mMainPassCB.Lights[3].Position = { 20.0f, 5.0f, 20.0f };
 	mMainPassCB.Lights[3].Strength = { 1.0f, 0.0f, 0.0f };
-	//green
+	
     mMainPassCB.Lights[4].Position = { 20.0f, 5.0f, -20.0f };
 	mMainPassCB.Lights[4].Strength = { 0.0f, 1.0f, 0.0f };
-	//red
+	
 	mMainPassCB.Lights[5].Position = { -20.0f, 5.0f, 20.0f };
-	mMainPassCB.Lights[5].Strength = { 1.0f, 0.0f, 0.0f };
+	mMainPassCB.Lights[5].Strength = { 1.0f, 0.0f, 1.0f };
 
-	//blue
+	
 	mMainPassCB.Lights[6].Position = { -20.0f, 5.0f, -20.0f };
 	mMainPassCB.Lights[6].Strength = { 0.0, 0.0f, 1.0f };
 
-	//cyan
-	mMainPassCB.Lights[7].Position = { 10.0f, 10.0f, 10.0f };
-	mMainPassCB.Lights[7].Strength = { 0.0, 1.0f, 1.0f };
-
-	//purple
-	mMainPassCB.Lights[8].Position = { -10.0f, 10.0f, 10.0f };
-	mMainPassCB.Lights[8].Strength = { 1.0, 0.0f, 1.0f };
     //spotlight
-    mMainPassCB.Lights[9].Position = { 0.0f, 15.0f, 0.0f };
-    mMainPassCB.Lights[9].Direction = { 0.0f, -1.0f, 0.0f };
-    mMainPassCB.Lights[9].SpotPower =  1.0f;
-    mMainPassCB.Lights[9].Strength = { 2.1f, 2.1f, 2.1f };
-    mMainPassCB.Lights[9].FalloffEnd = 20.0f;
+    mMainPassCB.Lights[7].Position = { 0.0f, 15.0f, -60.0f };
+    mMainPassCB.Lights[7].Direction = { 0.0f, -1.0f, 0.0f };
+    mMainPassCB.Lights[7].SpotPower =  1.0f;
+    mMainPassCB.Lights[7].Strength = { 2.1f, 2.1f, 2.1f };
+    mMainPassCB.Lights[7].FalloffEnd = 20.0f;
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
@@ -931,9 +926,9 @@ void ShapesApp::BuildShapeGeometry()
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.5f, 2.0f, 20, 20);
 	GeometryGenerator::MeshData cone = geoGen.CreateCone(0.5f, 1.0f, 20, 1);
     GeometryGenerator::MeshData triPrism = geoGen.CreateTriangularPrism(1, 1, 1);
-    GeometryGenerator::MeshData diamond = geoGen.CreateDiamond(1, 0.7f, 0.3, 1, 6, 1);
+    GeometryGenerator::MeshData diamond = geoGen.CreateDiamond(1.0f, 0.0f, 1.0f, 1.0f, 6, 1);
     GeometryGenerator::MeshData pyramid = geoGen.CreatePyramid(1, 1, 1 );
-	GeometryGenerator::MeshData torus = geoGen.CreateTorus(.1f, 1.0f, 20, 20);
+	GeometryGenerator::MeshData torus = geoGen.CreateTorus(0.1f, 1.0f, 20, 20);
 	GeometryGenerator::MeshData wedge = geoGen.CreateWedge(1.0f, 1.0f, 2.0f);
     //GeometryGenerator::MeshData waterGrid = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
     
@@ -1476,8 +1471,7 @@ void ShapesApp::SetRenderItemInfo(RenderItem& Ritem, std::string itemType, XMMAT
     Ritem.IndexCount = Ritem.Geo->DrawArgs[itemType].IndexCount;
     Ritem.StartIndexLocation = Ritem.Geo->DrawArgs[itemType].StartIndexLocation;
     Ritem.BaseVertexLocation = Ritem.Geo->DrawArgs[itemType].BaseVertexLocation;
-    //XMMATRIX inverseTransform = XMMatrixTranspose(transform); //MathHelper::InverseTranspose(transform);
-    //XMStoreFloat4x4(&Ritem.TWorld, inverseTransform);
+    
 
      mRitemLayer[(int)layer].push_back(&Ritem);
    
@@ -1494,11 +1488,9 @@ void ShapesApp::BuildRenderItems()
    
 
     auto gridRitem = std::make_unique<RenderItem>();
-    XMMATRIX gridWorld = XMMatrixTranslation(0.0f, 0.0f, -10.0f);
-
-	
-    SetRenderItemInfo(*gridRitem, "grid",gridWorld, "sand0", RenderLayer::Opaque);
-	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(20.0f, 20.0f, 20.0f));
+	XMMATRIX gridWorld = XMMatrixScaling(90.0f, 1.8f, 180.0f) * XMMatrixTranslation(0, 0, -10);
+    SetRenderItemInfo(*gridRitem, "box",gridWorld, "sand0", RenderLayer::Opaque);
+	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(10.0f, 20.0f, 10.0f));
 
 	mAllRitems.push_back(std::move(gridRitem));
 
@@ -1703,6 +1695,7 @@ void ShapesApp::BuildRenderItems()
 	XMMATRIX wall27World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(-16.0f, 2.5f, -27.0f);
 	SetRenderItemInfo(*wall27Ritem, "box", wall27World, "grass0", RenderLayer::Opaque);
 	mAllRitems.push_back(std::move(wall27Ritem));
+
 	//battlements
 	for (int i = 0; i < 21; i++)
 	{
@@ -1733,7 +1726,7 @@ void ShapesApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(diamondRitem));
 
 	auto wedgeRitem = std::make_unique<RenderItem>();
-	XMMATRIX wedgeWorld = XMMatrixScaling(5.0f, 1.0f, 5.0f) * XMMatrixRotationY(-nintydegrees) * XMMatrixTranslation(0.0f, 0.5f, -23.0f);
+	XMMATRIX wedgeWorld = XMMatrixScaling(5.0f, 1.0f, 5.0f) * XMMatrixRotationY(-nintydegrees) * XMMatrixTranslation(0.0f, 1.2f, -23.0f);
 	SetRenderItemInfo(*wedgeRitem, "wedge", wedgeWorld, "wirefence", RenderLayer::Transparent);
 	mAllRitems.push_back(std::move(wedgeRitem));
 
@@ -1886,7 +1879,7 @@ XMFLOAT3 ShapesApp::GetTreePosition(float minX, float maxX, float minZ, float ma
 
 		pos.x = MathHelper::RandF(minX, maxX);
 		pos.z = MathHelper::RandF(minZ, maxZ);
-		pos.y = 6.0f;
+		pos.y = 8.0f;
 
 	return pos;
 }
