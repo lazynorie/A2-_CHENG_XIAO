@@ -9,6 +9,7 @@
 #include "UploadBuffer.h"
 #include "GeometryGenerator.h"
 #include "FrameResource.h"
+#include "Camera.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -132,6 +133,8 @@ private:
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mStdInputLayout;
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mTreeSpriteInputLayout;
+
+	RenderItem* mWavesRitem = nullptr;
 
 	// List of all the render items.
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
@@ -384,6 +387,7 @@ void ShapesApp::OnKeyboardInput(const GameTimer& gt)
     else
         mIsWireframe = false;
 }
+
  
 void ShapesApp::UpdateCamera(const GameTimer& gt)
 {
@@ -392,6 +396,7 @@ void ShapesApp::UpdateCamera(const GameTimer& gt)
 	mEyePos.z = mRadius*sinf(mPhi)*sinf(mTheta);
 	mEyePos.y = mRadius*cosf(mPhi);
 
+	
 	// Build the view matrix.
 	XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
 	XMVECTOR target = XMVectorZero();
@@ -399,6 +404,8 @@ void ShapesApp::UpdateCamera(const GameTimer& gt)
 
 	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
 	XMStoreFloat4x4(&mView, view);
+
+	
 }
 
 void ShapesApp::AnimateMaterials(const GameTimer& gt)
@@ -550,7 +557,7 @@ void ShapesApp::LoadTextures()
 {
 	auto bricksTex = std::make_unique<Texture>();
 	bricksTex->Name = "bricksTex";
-	bricksTex->Filename = L"Textures/bricks.dds";
+	bricksTex->Filename = L"Textures/bricks2.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), bricksTex->Filename.c_str(),
 		bricksTex->Resource, bricksTex->UploadHeap));
@@ -583,12 +590,12 @@ void ShapesApp::LoadTextures()
         mCommandList.Get(), iceTex->Filename.c_str(),
         iceTex->Resource, iceTex->UploadHeap));
 
-	auto redTex = std::make_unique<Texture>();
-	redTex->Name = "redTex";
-	redTex->Filename = L"Textures/BlankRed.dds";
+	auto redBrickTex = std::make_unique<Texture>();
+	redBrickTex->Name = "redBrickTex";
+	redBrickTex->Filename = L"Textures/bricks3.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), redTex->Filename.c_str(),
-		redTex->Resource, redTex->UploadHeap));
+		mCommandList.Get(), redBrickTex->Filename.c_str(),
+		redBrickTex->Resource, redBrickTex->UploadHeap));
 
 
 	auto fenceTex = std::make_unique<Texture>();
@@ -607,7 +614,7 @@ void ShapesApp::LoadTextures()
 
 	auto treeTex = std::make_unique<Texture>();
 	treeTex->Name = "treeTex";
-	treeTex->Filename = L"Textures/treeArray.dds";
+	treeTex->Filename = L"Textures/treeArray2.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), treeTex->Filename.c_str(),
 		treeTex->Resource, treeTex->UploadHeap));
@@ -625,7 +632,7 @@ void ShapesApp::LoadTextures()
 	mTextures[sandTex->Name] = std::move(sandTex);
 	mTextures[waterTex->Name] = std::move(waterTex);
 	mTextures[iceTex->Name] = std::move(iceTex);
-	mTextures[redTex->Name] = std::move(redTex);
+	mTextures[redBrickTex->Name] = std::move(redBrickTex);
 	mTextures[fenceTex->Name] = std::move(fenceTex);
 	mTextures[treeArrayTex->Name] = std::move(treeArrayTex);
 	mTextures[treeTex->Name] = std::move(treeTex);
@@ -658,10 +665,9 @@ void ShapesApp::BuildDescriptorHeaps()
 	auto bricksTex = mTextures["bricksTex"]->Resource;
 	auto stoneTex = mTextures["stoneTex"]->Resource;
 	auto sandTex = mTextures["sandTex"]->Resource;
-	auto redTex = mTextures["redTex"]->Resource;
+	auto redBrickTex = mTextures["redBrickTex"]->Resource;
 	auto waterTex = mTextures["waterTex"]->Resource;
 	auto iceTex = mTextures["iceTex"]->Resource;
-	//auto flagTex = mTextures["flagTex"]->Resource;
 	auto grassTex = mTextures["grassTex"]->Resource;
 	auto fenceTex = mTextures["fenceTex"]->Resource;
 	auto treeArrayTex = mTextures["treeArrayTex"]->Resource;
@@ -700,9 +706,9 @@ void ShapesApp::BuildDescriptorHeaps()
 	// next descriptor
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 
-	srvDesc.Format = redTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = redTex->GetDesc().MipLevels;
-	md3dDevice->CreateShaderResourceView(redTex.Get(), &srvDesc, hDescriptor);
+	srvDesc.Format = redBrickTex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = redBrickTex->GetDesc().MipLevels;
+	md3dDevice->CreateShaderResourceView(redBrickTex.Get(), &srvDesc, hDescriptor);
 
 	//// next descriptor
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
@@ -862,7 +868,6 @@ void ShapesApp::BuildShapeGeometry()
     GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(90, 150 , 60 , 40);
-	GeometryGenerator::MeshData waterGrid = geoGen.CreateGrid(100, 100, 60 * 2, 40);
     GeometryGenerator::MeshData sandDunes = geoGen.CreateGrid(200, 200, 60 * 4, 40);
 	GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.5f, 2.0f, 20, 20);
@@ -872,8 +877,8 @@ void ShapesApp::BuildShapeGeometry()
     GeometryGenerator::MeshData pyramid = geoGen.CreatePyramid(1, 1, 1 );
 	GeometryGenerator::MeshData torus = geoGen.CreateTorus(.1f, 1.0f, 20, 20);
 	GeometryGenerator::MeshData wedge = geoGen.CreateWedge(1.0f, 1.0f, 2.0f);
-    GeometryGenerator::MeshData torus2 = geoGen.CreateTorus(0.3f, 2.0f, 20, 20);
-    GeometryGenerator::MeshData cylinder2 = geoGen.CreateCylinder(1.0f, 0.5f, 2.0f, 20, 20);
+    //GeometryGenerator::MeshData waterGrid = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
+    
 
 	//
 	// We are concatenating all the geometry into one big vertex/index buffer.  So
@@ -892,8 +897,8 @@ void ShapesApp::BuildShapeGeometry()
     UINT pyramidVertexOffset = diamondVertexOffset + (UINT)diamond.Vertices.size();
     UINT torusVertexOffset = pyramidVertexOffset + (UINT)pyramid.Vertices.size();
     UINT wedgeVertexOffset = torusVertexOffset + (UINT)torus.Vertices.size();
-    UINT torus2VertexOffset = wedgeVertexOffset + (UINT)wedge.Vertices.size();
-    UINT cylinder2VertexOffset = torus2VertexOffset + (UINT)torus2.Vertices.size();
+
+   
     
 	// Cache the starting index for each object in the concatenated index buffer.
 	UINT boxIndexOffset = 0;
@@ -907,8 +912,8 @@ void ShapesApp::BuildShapeGeometry()
     UINT pyramidIndexOffset = diamondIndexOffset + (UINT)diamond.Indices32.size();
     UINT torusIndexOffset = pyramidIndexOffset + (UINT)pyramid.Indices32.size();
     UINT wedgeIndexOffset = torusIndexOffset + (UINT)torus.Indices32.size(); 
-    UINT torus2IndexOffset = wedgeIndexOffset + (UINT)wedge.Indices32.size(); 
-    UINT cylinder2IndexOffset = torus2IndexOffset + (UINT)torus2.Indices32.size();
+ 
+    
 
     // Define the SubmeshGeometry that cover different 
     // regions of the vertex/index buffers.
@@ -968,37 +973,27 @@ void ShapesApp::BuildShapeGeometry()
     torusSubmesh.StartIndexLocation = torusIndexOffset;
     torusSubmesh.BaseVertexLocation = torusVertexOffset;
 
-    SubmeshGeometry torus2Submesh;
-    torus2Submesh.IndexCount = (UINT)torus2.Indices32.size();
-    torus2Submesh.StartIndexLocation = torus2IndexOffset;
-    torus2Submesh.BaseVertexLocation = torus2VertexOffset;
-    
-    SubmeshGeometry cylinder2Submesh;
-    cylinder2Submesh.IndexCount = (UINT)cylinder2.Indices32.size();
-    cylinder2Submesh.StartIndexLocation = cylinder2IndexOffset;
-    cylinder2Submesh.BaseVertexLocation = cylinder2VertexOffset;
+
 
 	//
 	// Extract the vertex elements we are interested in and pack the
 	// vertices of all the meshes into one vertex buffer.
 	//
 
-    auto totalVertexCount =
-        box.Vertices.size() +
-        grid.Vertices.size() +
-        sandDunes.Vertices.size() +
-        sphere.Vertices.size() +
-        cylinder.Vertices.size() +
-        cone.Vertices.size() +
-        triPrism.Vertices.size() +
-        diamond.Vertices.size() +
-        pyramid.Vertices.size() +
-        torus.Vertices.size() +
-        wedge.Vertices.size() +
-        torus2.Vertices.size() +
-        cylinder2.Vertices.size();
-
-
+	auto totalVertexCount =
+		box.Vertices.size() +
+		grid.Vertices.size() +
+		sandDunes.Vertices.size() +
+		sphere.Vertices.size() +
+		cylinder.Vertices.size() +
+		cone.Vertices.size() +
+		triPrism.Vertices.size() +
+		diamond.Vertices.size() +
+		pyramid.Vertices.size() +
+		torus.Vertices.size() +
+		wedge.Vertices.size();
+	
+      
 	std::vector<Vertex> vertices(totalVertexCount);
 
 	UINT k = 0;
@@ -1078,18 +1073,7 @@ void ShapesApp::BuildShapeGeometry()
 		 vertices[k].Normal = wedge.Vertices[i].Normal;
 		 vertices[k].TexC = wedge.Vertices[i].TexC;
      }
-     for (size_t i = 0; i < torus2.Vertices.size(); ++i, ++k)
-     {
-         vertices[k].Pos = torus2.Vertices[i].Position;
-		 vertices[k].Normal = torus2.Vertices[i].Normal;
-		 vertices[k].TexC = torus2.Vertices[i].TexC;
-     }
-     for (size_t i = 0; i < cylinder2.Vertices.size(); ++i, ++k)
-     {
-         vertices[k].Pos = cylinder2.Vertices[i].Position;
-		 vertices[k].Normal = cylinder2.Vertices[i].Normal;
-		 vertices[k].TexC = cylinder2.Vertices[i].TexC;
-     }
+
 
 
 	std::vector<std::uint16_t> indices;
@@ -1104,8 +1088,6 @@ void ShapesApp::BuildShapeGeometry()
 	indices.insert(indices.end(), std::begin(pyramid.GetIndices16()), std::end(pyramid.GetIndices16()));
 	indices.insert(indices.end(), std::begin(torus.GetIndices16()), std::end(torus.GetIndices16()));
     indices.insert(indices.end(), std::begin(wedge.GetIndices16()), std::end(wedge.GetIndices16()));
-    indices.insert(indices.end(), std::begin(torus2.GetIndices16()), std::end(torus2.GetIndices16()));
-    indices.insert(indices.end(), std::begin(cylinder2.GetIndices16()), std::end(cylinder2.GetIndices16()));
 
 
     const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
@@ -1142,15 +1124,13 @@ void ShapesApp::BuildShapeGeometry()
 	geo->DrawArgs["pyramid"] = pyramidSubmesh;
 	geo->DrawArgs["torus"] = torusSubmesh;
     geo->DrawArgs["wedge"] = wedgeSubmesh;
-    geo->DrawArgs["torus2"] = torus2Submesh;
-    geo->DrawArgs["cylinder2"] = cylinder2Submesh;
 
 	mGeometries[geo->Name] = std::move(geo);
 }
 
 void ShapesApp::BuildTreeSpritesGeometry()
 {
-	//step5
+	
 	struct TreeSpriteVertex
 	{
 		XMFLOAT3 Pos;
@@ -1158,17 +1138,17 @@ void ShapesApp::BuildTreeSpritesGeometry()
 	};
 
 	const float m_size = 15.0f;
-	const float m_halfHeight = m_size/2.4f;   //the texture has empty space, 2.4 works better for the actual tree height
+	const float m_halfHeight = m_size/2.4f; 
 
 	static const int treeCount = 20;
 	std::array<TreeSpriteVertex, treeCount> vertices;
-	//left side trees
+	//left side 
 	for(UINT i = 0; i < treeCount*0.5; ++i)
 	{
 		vertices[i].Pos = GetTreePosition(-40, -30, -60, 30, m_halfHeight);
 		vertices[i].Size = XMFLOAT2(m_size, m_size);
 	}
-	//right side trees
+	//right side
 	for(UINT i = treeCount*0.5; i < treeCount; ++i)
 	{
 		vertices[i].Pos = vertices[i].Pos = GetTreePosition(30, 40, -60, 30, m_halfHeight);
@@ -1354,13 +1334,13 @@ void ShapesApp::BuildMaterials()
 	sand0->FresnelR0 = XMFLOAT3(0.6f, 0.6f, 0.6f);
 	sand0->Roughness = 0.95f;
 
-	auto plastic0 = std::make_unique<Material>();
-	plastic0->Name = "plastic0";
-	plastic0->MatCBIndex = 3;
-	plastic0->DiffuseSrvHeapIndex = 3;
-	plastic0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	plastic0->FresnelR0 = XMFLOAT3(0.6f, 0.6f, 0.6f);
-	plastic0->Roughness = 0.3f;
+	auto redbrick0 = std::make_unique<Material>();
+	redbrick0->Name = "redbrick0";
+	redbrick0->MatCBIndex = 3;
+	redbrick0->DiffuseSrvHeapIndex = 3;
+	redbrick0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	redbrick0->FresnelR0 = XMFLOAT3(0.6f, 0.6f, 0.6f);
+	redbrick0->Roughness = 0.3f;
 
 	auto Water0 = std::make_unique<Material>();
 	Water0->Name = "water0";
@@ -1414,7 +1394,7 @@ void ShapesApp::BuildMaterials()
 
 	mMaterials["bricks0"] = std::move(bricks0);
 	mMaterials["stone0"] = std::move(stone0);
-	mMaterials["plastic0"] = std::move(plastic0);
+	mMaterials["redbrick0"] = std::move(redbrick0);
 	mMaterials["ice0"] = std::move(Ice0);
 	mMaterials["water0"] = std::move(Water0);
 	mMaterials["sand0"] = std::move(sand0);
@@ -1460,6 +1440,8 @@ void ShapesApp::BuildRenderItems()
 
 	
     SetRenderItemInfo(*gridRitem, "grid",gridWorld, "sand0", RenderLayer::Opaque);
+	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(20.0f, 20.0f, 20.0f));
+
 	mAllRitems.push_back(std::move(gridRitem));
 
    
@@ -1477,13 +1459,19 @@ void ShapesApp::BuildRenderItems()
         
        
 
-        XMMATRIX towerWorld = XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(cRadius, 3.5f, sRadius);//keep in mind the base cylinder has a height of 2
+        XMMATRIX towerWorld = XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(cRadius, 3.5f, sRadius);
+		XMStoreFloat4x4(&towerRitem->TexTransform, XMMatrixScaling(4.0f, 4.0f, 4.0f));
+
         XMMATRIX ttopWorld = XMMatrixScaling(5.0f, 4.0f, 5.0f) * XMMatrixTranslation(cRadius, 8.5f, sRadius);
+		XMStoreFloat4x4(&ttopRitem->TexTransform, XMMatrixScaling(5.0f, 4.0f, 5.0f));
+
         XMMATRIX donutWorld = XMMatrixScaling(2.5f, 3.0f, 2.5f) * XMMatrixTranslation(cRadius, 7.0f, sRadius);
+		XMStoreFloat4x4(&donutRitem->TexTransform, XMMatrixScaling(2.5f, 3.0f, 2.5f));
 
-        SetRenderItemInfo(*towerRitem, "cylinder", towerWorld, "bricks0", RenderLayer::Opaque);
 
-        SetRenderItemInfo(*ttopRitem, "cone", ttopWorld, "bricks0", RenderLayer::Opaque);
+        SetRenderItemInfo(*towerRitem, "cylinder", towerWorld, "redbrick0", RenderLayer::Opaque);
+
+        SetRenderItemInfo(*ttopRitem, "cone", ttopWorld, "redbrick0", RenderLayer::Opaque);
 
 		SetRenderItemInfo(*donutRitem, "torus", donutWorld, "sand0", RenderLayer::Opaque);
 
@@ -1498,6 +1486,7 @@ void ShapesApp::BuildRenderItems()
        
     }
 
+	//frontwall
 	for (int i = 0; i < 2; i++)
 	{
 
@@ -1510,7 +1499,10 @@ void ShapesApp::BuildRenderItems()
 			auto walltopRitem = std::make_unique<RenderItem>();
 
 			XMMATRIX FrontWallWorld = XMMatrixScaling(16.0f, 5.0f, 1.0f) * XMMatrixTranslation(  -12 + 24*i , 2.5f, -20.0f);
+			XMStoreFloat4x4(&FrontWallRitem->TexTransform, XMMatrixScaling(8.0f, 2.0f, 1.0f));
+
 			XMMATRIX walltopWorld = XMMatrixScaling(40.0f, 1.0f, 2.0f) * XMMatrixTranslation(0.0f, 5.3f, -20.0f);
+			XMStoreFloat4x4(&walltopRitem->TexTransform, XMMatrixScaling(20.0f, 0.5f, 1.0f));
 
 			SetRenderItemInfo(*FrontWallRitem, "box", FrontWallWorld, "bricks0", RenderLayer::Opaque);
 			SetRenderItemInfo(*walltopRitem, "prism", walltopWorld, "bricks0", RenderLayer::Opaque);
@@ -1534,7 +1526,10 @@ void ShapesApp::BuildRenderItems()
 			auto walltopRitem = std::make_unique<RenderItem>();
 
 			XMMATRIX wallWorld = XMMatrixScaling(1.0f, 5.0f, 40.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 2.5f, sinR);
+			XMStoreFloat4x4(&wallRitem->TexTransform, XMMatrixScaling(20.0f, 2.5f, 1.0f));
+
 			XMMATRIX walltopWorld = XMMatrixScaling(2.0f, 1.0f, 40.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 5.0f, sinR);
+			XMStoreFloat4x4(&walltopRitem->TexTransform, XMMatrixScaling(20.0f, 0.5f, 1.0f));
 
 			SetRenderItemInfo(*wallRitem, "box", wallWorld, "bricks0", RenderLayer::Opaque);
 			SetRenderItemInfo(*walltopRitem, "box", walltopWorld, "bricks0", RenderLayer::Opaque);
@@ -1558,7 +1553,7 @@ void ShapesApp::BuildRenderItems()
 			//auto walltopRitem = std::make_unique<RenderItem>();
 
 			XMMATRIX wall2World = XMMatrixScaling(1.0f, 5.0f, 40.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 2.5f, -sinR -40);
-			//XMMATRIX walltopWorld = XMMatrixScaling(2.0f, 1.0f, 20.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 5.0f, sinR);
+			XMStoreFloat4x4(&wall2Ritem->TexTransform, XMMatrixScaling(10.0f, 1.0f, 10.0f));
 
 			SetRenderItemInfo(*wall2Ritem, "box", wall2World, "grass0", RenderLayer::Opaque);
 			//SetRenderItemInfo(*walltopRitem, "box", walltopWorld, "bricks0", RenderLayer::Opaque);
@@ -1610,29 +1605,13 @@ void ShapesApp::BuildRenderItems()
 
 
 	auto waterRitem = std::make_unique<RenderItem>();
-	XMMATRIX WaterWorld = XMMatrixScaling(5.0f, 5.0, 5.0f) * XMMatrixTranslation( 1.5, -1.5 ,  1.5);
+	XMMATRIX WaterWorld = XMMatrixScaling(5.0f, 5.0f, 5.0f) * XMMatrixTranslation( 1.5, -1.5 ,  1.5);
+	XMStoreFloat4x4(&waterRitem->TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
 	SetRenderItemInfo(*waterRitem, "grid", WaterWorld, "water0", RenderLayer::Transparent);
 	mAllRitems.push_back(std::move(waterRitem));
 
- //   for (int i = 0; i < 2; i++)
- //   {
- //       auto wedgeRitem = std::make_unique<RenderItem>();
- //       XMMATRIX wedgeWorld = (XMMatrixRotationY(-thetaSquareStep) * XMMatrixScaling(3.0f, 3.0f, 18.0f) * XMMatrixTranslation(0.0f, 4.5f + i * -3, -3.5f + i * -31));
- //       SetRenderItemInfo(*wedgeRitem, "wedge", wedgeWorld, "stone0", RenderLayer::Opaque);
- //       mAllRitems.push_back(std::move(wedgeRitem));
- //   }
+	
 
- //   auto pathRitem = std::make_unique<RenderItem>();
- //   XMMATRIX pathWorld = XMMatrixScaling(6.0f, 3.0f, 13.0f)* XMMatrixTranslation( 0.0f, 1.5f, -19.0f);
- //   SetRenderItemInfo(*pathRitem, "box", pathWorld, "stone0", RenderLayer::Opaque);
-	// mAllRitems.push_back(std::move(pathRitem));
-
-	// auto boxRitem = std::make_unique<RenderItem>();
-	// XMMATRIX boxWorld = XMMatrixScaling(6.0f, 6.0f, 2.0f)* XMMatrixTranslation( 0.0f, 5.5f, -25.0f);
-	//SetRenderItemInfo(*boxRitem, "box", boxWorld, "wirefence", RenderLayer::AlphaTested );
-
-	//mAllRitems.push_back(std::move(boxRitem));
-	//
 
 	auto treeSpritesRitem = std::make_unique<RenderItem>();
 	treeSpritesRitem->World = MathHelper::Identity4x4();
