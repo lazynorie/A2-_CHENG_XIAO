@@ -569,7 +569,7 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.AmbientLight = { 0.25f, 0.25f, 0.25f, 1.0f };
     
 	mMainPassCB.Lights[0].Direction = { 0.0f, -1.0f, 0.0f };
-	mMainPassCB.Lights[0].Strength = { 0.5f, 0.5, 0.5f };
+	mMainPassCB.Lights[0].Strength = { 0.8f, 0.5, 0.3f };
    
 	//Diamond light
 	mMainPassCB.Lights[1].Position = { 0.0f, 6.0f, 0.0f };
