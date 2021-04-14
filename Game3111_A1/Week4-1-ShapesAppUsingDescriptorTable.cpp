@@ -8,6 +8,7 @@
 #include "MathHelper.h"
 #include "UploadBuffer.h"
 #include "GeometryGenerator.h"
+#include "Camera.h"
 #include "FrameResource.h"
 #include "Camera.h"
 
@@ -35,7 +36,7 @@ enum class RenderLayer : int
 struct RenderItem
 {
 	RenderItem() = default;
-
+	RenderItem(const RenderItem& rhs) = delete;
     // World matrix of the shape that describes the object's local space
     // relative to the world space, which defines the position, orientation,
     // and scale of the object in the world.
@@ -60,6 +61,8 @@ struct RenderItem
     // Primitive topology.
     D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
+	std::vector<ObjectConstants> Instances;
+	
     // DrawIndexedInstanced parameters.
     UINT IndexCount = 0;
     UINT StartIndexLocation = 0;
@@ -143,6 +146,11 @@ private:
 	// Render items divided by PSO.
 	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
 
+	UINT mInstanceCount = 0;
+	bool mFrustumCullingEnabled = true;
+    BoundingFrustum mCamFrustum;
+
+	Camera mCamera;
 
     PassConstants mMainPassCB;
 
@@ -206,6 +214,7 @@ bool ShapesApp::Initialize()
     ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	mCamera.SetPosition(0.0f, 3.0f, -65.0f);
 
     LoadTextures();
     BuildRootSignature();
@@ -233,8 +242,11 @@ void ShapesApp::OnResize()
 {
     D3DApp::OnResize();
 
+	mCamera.SetLens(0.4f * MathHelper::Pi, AspectRatio(), 1.0f, 100.0f);
+
+	BoundingFrustum::CreateFromMatrix(mCamFrustum, mCamera.GetProj());
     // The window resized, so update the aspect ratio and recompute the projection matrix.
-    XMMATRIX P = XMMatrixPerspectiveFovLH(0.25f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+    XMMATRIX P = XMMatrixPerspectiveFovLH(0.2f*MathHelper::Pi, AspectRatio(), 1.0f, 100.0f);
     XMStoreFloat4x4(&mProj, P);
 }
 
@@ -354,11 +366,14 @@ void ShapesApp::OnMouseMove(WPARAM btnState, int x, int y)
     {
         // Make each pixel correspond to a quarter of a degree.
         float dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePos.x));
-        float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
+        //float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
+
+		//mCamera.Pitch(dy);
+		mCamera.RotateY(dx);
 
         // Update angles based on input to orbit camera around box.
         mTheta += dx;
-        mPhi += dy;
+        //mPhi += dy;
 
         // Restrict the angle mPhi.
         mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
@@ -382,10 +397,29 @@ void ShapesApp::OnMouseMove(WPARAM btnState, int x, int y)
  
 void ShapesApp::OnKeyboardInput(const GameTimer& gt)
 {
+	const float dt = gt.DeltaTime();
+	
+	if (GetAsyncKeyState('W') & 0x8000)
+		mCamera.Walk(10.0f * dt);
+
+	if (GetAsyncKeyState('S') & 0x8000)
+		mCamera.Walk(-10.0f * dt);
+
+	if (GetAsyncKeyState('A') & 0x8000)
+		mCamera.Strafe(-10.0f * dt);
+
+	if (GetAsyncKeyState('D') & 0x8000)
+		mCamera.Strafe(10.0f * dt);
+
+	if (GetAsyncKeyState('R') & 0x8000)
+		mCamera.Pedestal(10.0f * dt);
+	if (GetAsyncKeyState('F') & 0x8000)
+		mCamera.Pedestal(-10.0f * dt);
     if(GetAsyncKeyState('1') & 0x8000)
         mIsWireframe = true;
     else
         mIsWireframe = false;
+	mCamera.UpdateViewMatrix();
 }
 
  
@@ -434,27 +468,51 @@ void ShapesApp::AnimateMaterials(const GameTimer& gt)
 
 void ShapesApp::UpdateObjectCBs(const GameTimer& gt)
 {
+	XMMATRIX view = mCamera.GetView();
+	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
+
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
-	for(auto& e : mAllRitems)
+	for (auto& e : mAllRitems)
 	{
 		// Only update the cbuffer data if the constants have changed.  
 		// This needs to be tracked per frame resource.
-		if(e->NumFramesDirty > 0)
+
+		/*const auto& instanceData = e->Instances;
+
+		int visibleInstanceCount = 0;
+
+		for (UINT i = 0; i < (UINT)instanceData.size(); ++i)
+		{
+			XMMATRIX world = XMLoadFloat4x4(&instanceData[i].World);
+			XMMATRIX texTransform = XMLoadFloat4x4(&instanceData[i].TexTransform);
+
+			XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(world), world);
+
+			// View space to the object's local space.
+			XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
+
+			// step3: Transform the camera frustum from view space to the object's local space.
+			BoundingFrustum localSpaceFrustum;
+			mCamFrustum.Transform(localSpaceFrustum, viewToLocal);
+			}
+		}*/
+		if (e->NumFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->World);
-            XMMATRIX tWorld = XMLoadFloat4x4(&e->TWorld);
-            XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
+			XMMATRIX tWorld = XMLoadFloat4x4(&e->TWorld);
+			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
 			ObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
-            XMStoreFloat4x4(&objConstants.TWorld, XMMatrixTranspose(MathHelper::InverseTranspose(world)));
-            XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
+			XMStoreFloat4x4(&objConstants.TWorld, XMMatrixTranspose(MathHelper::InverseTranspose(world)));
+			XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
 
 
 			currObjectCB->CopyData(e->ObjCBIndex, objConstants);
 
 			// Next FrameResource need to be updated too.
 			e->NumFramesDirty--;
+
 		}
 	}
 }
@@ -488,8 +546,8 @@ void ShapesApp::UpdateMaterialCBs(const GameTimer& gt)
 
 void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 {
-	XMMATRIX view = XMLoadFloat4x4(&mView);
-	XMMATRIX proj = XMLoadFloat4x4(&mProj);
+	XMMATRIX view = mCamera.GetView();
+	XMMATRIX proj = mCamera.GetProj();
 
 	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
@@ -502,7 +560,7 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 	XMStoreFloat4x4(&mMainPassCB.InvProj, XMMatrixTranspose(invProj));
 	XMStoreFloat4x4(&mMainPassCB.ViewProj, XMMatrixTranspose(viewProj));
 	XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
-	mMainPassCB.EyePosW = mEyePos;
+	mMainPassCB.EyePosW = mCamera.GetPosition3f();
 	mMainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
 	mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
 	mMainPassCB.NearZ = 1.0f;
@@ -1541,29 +1599,110 @@ void ShapesApp::BuildRenderItems()
 	}
 
 	//mazewalls
-	for (int i = 0; i < 3; i++)
-	{
-		float theta = i * nintydegrees;
-		float sinR = x1 * sinf(theta);
-		float cosR = x1 * cosf(theta);
-
-		if (i < 3)
-		{
-			auto wall2Ritem = std::make_unique<RenderItem>();
-			//auto walltopRitem = std::make_unique<RenderItem>();
-
-			XMMATRIX wall2World = XMMatrixScaling(1.0f, 5.0f, 40.0f) * XMMatrixRotationY(theta) * XMMatrixTranslation(cosR, 2.5f, -sinR -40);
-			XMStoreFloat4x4(&wall2Ritem->TexTransform, XMMatrixScaling(10.0f, 1.0f, 10.0f));
-
-			SetRenderItemInfo(*wall2Ritem, "box", wall2World, "grass0", RenderLayer::Opaque);
-			//SetRenderItemInfo(*walltopRitem, "box", walltopWorld, "bricks0", RenderLayer::Opaque);
-
-			mAllRitems.push_back(std::move(wall2Ritem));
-			//mAllRitems.push_back(std::move(walltopRitem));
-
-		}
-	}
-
+	auto wall2Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall2World = XMMatrixScaling(1.0f, 4.0f, 40.0f) * XMMatrixTranslation(25.0f, 2.5f, -40.0f);
+	SetRenderItemInfo(*wall2Ritem, "box", wall2World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall2Ritem));
+	auto wall3Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall3World = XMMatrixScaling(1.0f, 4.0f, 40.0f) * XMMatrixTranslation(-25.0f, 2.5f, -40.0f);
+	SetRenderItemInfo(*wall3Ritem, "box", wall3World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall3Ritem));
+	auto wall4Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall4World = XMMatrixScaling(4.0f, 4.0f, 1.0f) * XMMatrixTranslation(23.5f, 2.5f, -19.5f);
+	SetRenderItemInfo(*wall4Ritem, "box", wall4World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall4Ritem));
+	auto wall5Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall5World = XMMatrixScaling(4.0f, 4.0f, 1.0f) * XMMatrixTranslation(-23.5f, 2.5f, -19.5f);
+	SetRenderItemInfo(*wall5Ritem, "box", wall5World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall5Ritem));
+	auto wall6Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall6World = XMMatrixScaling(23.0f, 4.0f, 1.0f) * XMMatrixTranslation(-14.0f, 2.5f, -60.0f);
+	SetRenderItemInfo(*wall6Ritem, "box", wall6World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall6Ritem));
+	auto wall7Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall7World = XMMatrixScaling(23.0f, 4.0f, 1.0f) * XMMatrixTranslation(14.0f, 2.5f, -60.0f);
+	SetRenderItemInfo(*wall7Ritem, "box", wall7World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall7Ritem));
+	auto wall8Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall8World = XMMatrixScaling(40.0f, 4.0f, 1.0f) * XMMatrixTranslation(0.0f, 2.5f, -55.5f);
+	SetRenderItemInfo(*wall8Ritem, "box", wall8World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall8Ritem));
+	auto wall9Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall9World = XMMatrixScaling(21.0f, 4.0f, 1.0f) * XMMatrixTranslation(14.0f, 2.5f, -50.0f);
+	SetRenderItemInfo(*wall9Ritem, "box", wall9World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall9Ritem));
+	auto wall10Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall10World = XMMatrixScaling(24.0f, 4.0f, 1.0f) * XMMatrixTranslation(13.0f, 2.5f, -40.0f);
+	SetRenderItemInfo(*wall10Ritem, "box", wall10World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall10Ritem));
+	auto wall11Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall11World = XMMatrixScaling(27.0f, 4.0f, 1.0f) * XMMatrixTranslation(3.5f, 2.5f, -30.0f);
+	SetRenderItemInfo(*wall11Ritem, "box", wall11World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall11Ritem));
+	auto wall12Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall12World = XMMatrixScaling(10.5f, 4.0f, 1.0f) * XMMatrixTranslation(-20.0f, 2.5f, -35.0f);
+	SetRenderItemInfo(*wall12Ritem, "box", wall12World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall12Ritem));
+	auto wall13Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall13World = XMMatrixScaling(5.0f, 4.0f, 1.0f) * XMMatrixTranslation(-12.0f, 2.5f, -50.0f);
+	SetRenderItemInfo(*wall13Ritem, "box", wall13World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall13Ritem));
+	auto wall14Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall14World = XMMatrixScaling(5.5f, 4.0f, 1.0f) * XMMatrixTranslation(-22.5f, 2.5f, -47.0f);
+	SetRenderItemInfo(*wall14Ritem, "box", wall14World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall14Ritem));
+	auto wall15Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall15World = XMMatrixScaling(1.0f, 4.0f, 15.0f) * XMMatrixTranslation(-19.5f, 2.5f, -47.5f);
+	SetRenderItemInfo(*wall15Ritem, "box", wall15World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall15Ritem));
+	auto wall16Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall16World = XMMatrixScaling(1.0f, 4.0f, 16.0f) * XMMatrixTranslation(-14.5f, 2.5f, -42.5f);
+	SetRenderItemInfo(*wall16Ritem, "box", wall16World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall16Ritem));
+	auto wall17Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall17World = XMMatrixScaling(1.0f, 4.0f, 20.0f) * XMMatrixTranslation(-9.5f, 2.5f, -40.5f);
+	SetRenderItemInfo(*wall17Ritem, "box", wall17World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall17Ritem));
+	auto wall18Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall18World = XMMatrixScaling(1.0f, 4.0f, 20.0f) * XMMatrixTranslation(-3.5f, 2.5f, -40.5f);
+	SetRenderItemInfo(*wall18Ritem, "box", wall18World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall18Ritem));
+	auto wall19Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall19World = XMMatrixScaling(23.0f, 4.0f, 1.0f) * XMMatrixTranslation(8.5f, 2.5f, -45.0f);
+	SetRenderItemInfo(*wall19Ritem, "box", wall19World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall19Ritem));
+	auto wall20Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall20World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(1.5f, 2.5f, -37.5f);
+	SetRenderItemInfo(*wall20Ritem, "box", wall20World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall20Ritem));
+	auto wall21Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall21World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(6.5f, 2.5f, -32.5f);
+	SetRenderItemInfo(*wall21Ritem, "box", wall21World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall21Ritem));
+	auto wall22Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall22World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(11.5f, 2.5f, -37.5f);
+	SetRenderItemInfo(*wall22Ritem, "box", wall22World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall22Ritem));
+	auto wall23Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall23World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(6.5f, 2.5f, -22.5f);
+	SetRenderItemInfo(*wall23Ritem, "box", wall23World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall23Ritem));
+	auto wall24Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall24World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(16.5f, 2.5f, -27.5f);
+	SetRenderItemInfo(*wall24Ritem, "box", wall24World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall24Ritem));
+	auto wall25Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall25World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(-6.5f, 2.5f, -22.5f);
+	SetRenderItemInfo(*wall25Ritem, "box", wall25World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall25Ritem));
+	auto wall26Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall26World = XMMatrixScaling(10.0f, 4.0f, 1.0f) * XMMatrixTranslation(-11.0f, 2.5f, -25.0f);
+	SetRenderItemInfo(*wall26Ritem, "box", wall26World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall26Ritem));
+	auto wall27Ritem = std::make_unique<RenderItem>();
+	XMMATRIX wall27World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(-16.0f, 2.5f, -27.0f);
+	SetRenderItemInfo(*wall27Ritem, "box", wall27World, "grass0", RenderLayer::Opaque);
+	mAllRitems.push_back(std::move(wall27Ritem));
 	//battlements
 	for (int i = 0; i < 21; i++)
 	{
