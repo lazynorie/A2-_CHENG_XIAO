@@ -302,7 +302,7 @@ void ShapesApp::Draw(const GameTimer& gt)
 	mCommandList->SetPipelineState(mPSOs["treeSprites"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites]);
 
-	/*mCommandList->SetPipelineState(mPSOs["CoralSprite"].Get());
+	/*mCommandList->SetPipelineState(mPSOs["treeSprite"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites]);*/
 
 	mCommandList->SetPipelineState(mPSOs["transparent"].Get());
@@ -605,12 +605,12 @@ void ShapesApp::LoadTextures()
 		mCommandList.Get(), treeArrayTex->Filename.c_str(),
 		treeArrayTex->Resource, treeArrayTex->UploadHeap));
 
-	auto CoralTex = std::make_unique<Texture>();
-	CoralTex->Name = "CoralTex";
-	CoralTex->Filename = L"Textures/CoralArray.dds";
+	auto treeTex = std::make_unique<Texture>();
+	treeTex->Name = "treeTex";
+	treeTex->Filename = L"Textures/treeArray.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), CoralTex->Filename.c_str(),
-		CoralTex->Resource, CoralTex->UploadHeap));
+		mCommandList.Get(), treeTex->Filename.c_str(),
+		treeTex->Resource, treeTex->UploadHeap));
 
 	auto grassTex = std::make_unique<Texture>();
 	grassTex->Name = "grassTex";
@@ -628,7 +628,7 @@ void ShapesApp::LoadTextures()
 	mTextures[redTex->Name] = std::move(redTex);
 	mTextures[fenceTex->Name] = std::move(fenceTex);
 	mTextures[treeArrayTex->Name] = std::move(treeArrayTex);
-	mTextures[CoralTex->Name] = std::move(CoralTex);
+	mTextures[treeTex->Name] = std::move(treeTex);
 	mTextures[grassTex->Name] = std::move(grassTex);
 
 	
@@ -665,7 +665,7 @@ void ShapesApp::BuildDescriptorHeaps()
 	auto grassTex = mTextures["grassTex"]->Resource;
 	auto fenceTex = mTextures["fenceTex"]->Resource;
 	auto treeArrayTex = mTextures["treeArrayTex"]->Resource;
-	auto CoralTex = mTextures["CoralTex"]->Resource;
+	auto treeTex = mTextures["treeTex"]->Resource;
 	
 
 	
@@ -756,14 +756,14 @@ void ShapesApp::BuildDescriptorHeaps()
 	// next descriptor
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 
-	auto coraldesc = CoralTex->GetDesc();
+	auto treedesc = treeTex->GetDesc();
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-	srvDesc.Format = CoralTex->GetDesc().Format;
+	srvDesc.Format = treeTex->GetDesc().Format;
 	srvDesc.Texture2DArray.MostDetailedMip = 0;
 	srvDesc.Texture2DArray.MipLevels = -1;
 	srvDesc.Texture2DArray.FirstArraySlice = 0;
-	srvDesc.Texture2DArray.ArraySize = CoralTex->GetDesc().DepthOrArraySize;
-	md3dDevice->CreateShaderResourceView(CoralTex.Get(), &srvDesc, hDescriptor);
+	srvDesc.Texture2DArray.ArraySize = treeTex->GetDesc().DepthOrArraySize;
+	md3dDevice->CreateShaderResourceView(treeTex.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 
@@ -1402,13 +1402,13 @@ void ShapesApp::BuildMaterials()
 	treeSprites->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	treeSprites->Roughness = 0.125f;
 
-	auto coralSprite = std::make_unique<Material>();
-	coralSprite->Name = "coralSprite";
-	coralSprite->MatCBIndex = 9;
-	coralSprite->DiffuseSrvHeapIndex = 9;
-	coralSprite->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	coralSprite->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-	coralSprite->Roughness = 0.125f;
+	auto treeSprite = std::make_unique<Material>();
+	treeSprite->Name = "treeSprite";
+	treeSprite->MatCBIndex = 9;
+	treeSprite->DiffuseSrvHeapIndex = 9;
+	treeSprite->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	treeSprite->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	treeSprite->Roughness = 0.125f;
 
 	
 
@@ -1420,7 +1420,7 @@ void ShapesApp::BuildMaterials()
 	mMaterials["sand0"] = std::move(sand0);
 	mMaterials["wirefence"] = std::move(wirefence);
 	mMaterials["treeSprites"] = std::move(treeSprites);	
-	mMaterials["coralSprite"] = std::move(coralSprite);
+	mMaterials["treeSprite"] = std::move(treeSprite);
 	mMaterials["grass0"] = std::move(grass0);
 
 }
@@ -1634,17 +1634,17 @@ void ShapesApp::BuildRenderItems()
 	//mAllRitems.push_back(std::move(boxRitem));
 	//
 
-	auto coralSpritesRitem = std::make_unique<RenderItem>();
-	coralSpritesRitem->World = MathHelper::Identity4x4();
-	coralSpritesRitem->ObjCBIndex = objCBIndex++;
-	coralSpritesRitem->Mat = mMaterials["coralSprite"].get();
-	coralSpritesRitem->Geo = mGeometries["treeSpritesGeo"].get();
-	coralSpritesRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
-	coralSpritesRitem->IndexCount = coralSpritesRitem->Geo->DrawArgs["points"].IndexCount;
-	coralSpritesRitem->StartIndexLocation = coralSpritesRitem->Geo->DrawArgs["points"].StartIndexLocation;
-	coralSpritesRitem->BaseVertexLocation = coralSpritesRitem->Geo->DrawArgs["points"].BaseVertexLocation;
-	mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites].push_back(coralSpritesRitem.get());
-	mAllRitems.push_back(std::move(coralSpritesRitem));
+	auto treeSpritesRitem = std::make_unique<RenderItem>();
+	treeSpritesRitem->World = MathHelper::Identity4x4();
+	treeSpritesRitem->ObjCBIndex = objCBIndex++;
+	treeSpritesRitem->Mat = mMaterials["treeSprite"].get();
+	treeSpritesRitem->Geo = mGeometries["treeSpritesGeo"].get();
+	treeSpritesRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+	treeSpritesRitem->IndexCount = treeSpritesRitem->Geo->DrawArgs["points"].IndexCount;
+	treeSpritesRitem->StartIndexLocation = treeSpritesRitem->Geo->DrawArgs["points"].StartIndexLocation;
+	treeSpritesRitem->BaseVertexLocation = treeSpritesRitem->Geo->DrawArgs["points"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites].push_back(treeSpritesRitem.get());
+	mAllRitems.push_back(std::move(treeSpritesRitem));
 
 
 
