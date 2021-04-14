@@ -317,9 +317,6 @@ void ShapesApp::Draw(const GameTimer& gt)
 	mCommandList->SetPipelineState(mPSOs["treeSprites"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites]);
 
-	/*mCommandList->SetPipelineState(mPSOs["treeSprite"].Get());
-	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AlphaTestedTreeSprites]);*/
-
 	mCommandList->SetPipelineState(mPSOs["transparent"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Transparent]);
 
@@ -569,19 +566,20 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.DeltaTime = gt.DeltaTime();
 
     //lights
-	mMainPassCB.AmbientLight = { 0.4f, 0.4f, 0.4f, 1.0f };
+	mMainPassCB.AmbientLight = { 0.25f, 0.25f, 0.25f, 1.0f };
     
-	mMainPassCB.Lights[0].Direction = { -0.0f, -1.0f, 0.0f };
+	mMainPassCB.Lights[0].Direction = { 0.0f, -1.0f, 0.0f };
 	mMainPassCB.Lights[0].Strength = { 0.8f, 0.5, 0.3f };
    
+	//Diamond light
 	mMainPassCB.Lights[1].Position = { 0.0f, 6.0f, 0.0f };
 	mMainPassCB.Lights[1].Strength = { 0.0f, 0.0f, 1.5f };
 
-
+	//castle entry light
 	mMainPassCB.Lights[2].Position = { 0.0f, 5.0f, -20.0f };
-	mMainPassCB.Lights[2].Strength = { 1.0f, 1.0f, 1.0f };
+	mMainPassCB.Lights[2].Strength = { 0.0f, 1.0f, 1.0f };
 	
-	
+	//four tower lights
 	mMainPassCB.Lights[3].Position = { 20.0f, 5.0f, 20.0f };
 	mMainPassCB.Lights[3].Strength = { 1.0f, 0.0f, 0.0f };
 	
@@ -591,7 +589,6 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.Lights[5].Position = { -20.0f, 5.0f, 20.0f };
 	mMainPassCB.Lights[5].Strength = { 1.0f, 0.0f, 1.0f };
 
-	
 	mMainPassCB.Lights[6].Position = { -20.0f, 5.0f, -20.0f };
 	mMainPassCB.Lights[6].Strength = { 0.0, 0.0f, 1.0f };
 
@@ -1193,18 +1190,34 @@ void ShapesApp::BuildTreeSpritesGeometry()
 	const float m_size = 15.0f;
 	const float m_halfHeight = m_size/2.4f; 
 
-	static const int treeCount = 20;
+	static const int treeCount = 30;
 	std::array<TreeSpriteVertex, treeCount> vertices;
 	//left side 
-	for(UINT i = 0; i < treeCount*0.5; ++i)
+	for(UINT i = 0; i < treeCount*0.3; ++i)
 	{
 		vertices[i].Pos = GetTreePosition(-40, -30, -60, 30, m_halfHeight);
 		vertices[i].Size = XMFLOAT2(m_size, m_size);
 	}
 	//right side
-	for(UINT i = treeCount*0.5; i < treeCount; ++i)
+	for(UINT i = treeCount*0.3; i < treeCount * 0.6; ++i)
 	{
 		vertices[i].Pos = vertices[i].Pos = GetTreePosition(30, 40, -60, 30, m_halfHeight);
+		vertices[i].Size = XMFLOAT2(m_size, m_size);
+	}
+
+
+	//front side
+	for (UINT i = treeCount * 0.6; i < treeCount * 0.8; ++i)
+	{
+		vertices[i].Pos = vertices[i].Pos = GetTreePosition(-40, 40, -70, -80, m_halfHeight);
+		vertices[i].Size = XMFLOAT2(m_size, m_size);
+	}
+
+
+	//back side
+	for (UINT i = treeCount * 0.8; i < treeCount; ++i)
+	{
+		vertices[i].Pos = vertices[i].Pos = GetTreePosition(-40, 40, 40, 50, m_halfHeight);
 		vertices[i].Size = XMFLOAT2(m_size, m_size);
 	}
 	
@@ -1214,7 +1227,8 @@ void ShapesApp::BuildTreeSpritesGeometry()
 	{
 		0, 1, 2, 3, 4, 5, 6, 7,
 		8, 9, 10, 11, 12, 13, 14, 15,
-		16, 17, 18, 19  
+		16, 17, 18, 19 ,20, 21, 22, 
+		23, 24, 25, 26, 27, 28, 29
 	};
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(TreeSpriteVertex);
