@@ -298,7 +298,7 @@ void Camera::UpdateViewMatrix()
 	}
 }
 
-DirectX::XMVECTOR Camera::GetNewPosDifference(float d, moveType type)
+DirectX::XMVECTOR Camera::MoveCamera(float d, moveType type)
 {
 	XMVECTOR s = XMVectorReplicate(d);
 	XMVECTOR dir;

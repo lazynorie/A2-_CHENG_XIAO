@@ -85,7 +85,7 @@ private:
     virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
     virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
 
-	void CameraCollision(const XMVECTOR vc);
+	void CollisionCheck(const XMVECTOR vc);
     void OnKeyboardInput(const GameTimer& gt);
 	void UpdateCamera(const GameTimer& gt);
     void AnimateMaterials(const GameTimer& gt);
@@ -279,6 +279,7 @@ void ShapesApp::Update(const GameTimer& gt)
 	UpdateObjectCBs(gt);
     UpdateMaterialCBs(gt);
 	UpdateMainPassCB(gt);
+
 }
 
 void ShapesApp::Draw(const GameTimer& gt)
@@ -398,7 +399,7 @@ void ShapesApp::OnMouseMove(WPARAM btnState, int x, int y)
     mLastMousePos.y = y;
 }
  
-void ShapesApp::CameraCollision(const XMVECTOR vc)
+void ShapesApp::CollisionCheck(const XMVECTOR vc)
 {
 	BoundingBox newBounds;
 	XMStoreFloat3(&newBounds.Center, vc);
@@ -424,47 +425,47 @@ void ShapesApp::OnKeyboardInput(const GameTimer& gt)
 	const float dt = gt.DeltaTime();
 	const float speed = 10.0f * dt;
 
-	//if (GetAsyncKeyState('W') & 0x8000)
-	//	mCamera.Walk(10.0f * dt);
-	//
-
-	//if (GetAsyncKeyState('S') & 0x8000)
-	//	mCamera.Walk(-10.0f * dt);
-
-	//if (GetAsyncKeyState('A') & 0x8000)
-	//	mCamera.Strafe(-10.0f * dt);
-
-	//if (GetAsyncKeyState('D') & 0x8000)
-	//	mCamera.Strafe(10.0f * dt);
-
-	//if (GetAsyncKeyState('R') & 0x8000)
-	//	mCamera.Pedestal(10.0f * dt);
-	//if (GetAsyncKeyState('F') & 0x8000)
-	//	mCamera.Pedestal(-10.0f * dt);
-
-	if (GetAsyncKeyState('W') & 0x8000) 
-		newPos += mCamera.GetNewPosDifference(speed, walk);
+	/*if (GetAsyncKeyState('W') & 0x8000)
+		mCamera.Walk(10.0f * dt);
+	
 
 	if (GetAsyncKeyState('S') & 0x8000)
-		newPos += mCamera.GetNewPosDifference(-speed, walk);
+		mCamera.Walk(-10.0f * dt);
 
 	if (GetAsyncKeyState('A') & 0x8000)
-		newPos += mCamera.GetNewPosDifference(-speed, strafe);
+		mCamera.Strafe(-10.0f * dt);
 
 	if (GetAsyncKeyState('D') & 0x8000)
-		newPos += mCamera.GetNewPosDifference(speed, strafe);
-
-	if (GetAsyncKeyState('F') & 0x8000)
-		newPos += mCamera.GetNewPosDifference(-speed, pedestal);
+		mCamera.Strafe(10.0f * dt);
 
 	if (GetAsyncKeyState('R') & 0x8000)
-		newPos += mCamera.GetNewPosDifference(speed, pedestal);
+		mCamera.Pedestal(10.0f * dt);
+	if (GetAsyncKeyState('F') & 0x8000)
+		mCamera.Pedestal(-10.0f * dt);*/
+
+	if (GetAsyncKeyState('W') & 0x8000) 
+		newPos += mCamera.MoveCamera(speed, walk);
+
+	if (GetAsyncKeyState('S') & 0x8000)
+		newPos += mCamera.MoveCamera(-speed, walk);
+
+	if (GetAsyncKeyState('A') & 0x8000)
+		newPos += mCamera.MoveCamera(-speed, strafe);
+
+	if (GetAsyncKeyState('D') & 0x8000)
+		newPos += mCamera.MoveCamera(speed, strafe);
+
+	if (GetAsyncKeyState('F') & 0x8000)
+		newPos += mCamera.MoveCamera(-speed, pedestal);
+
+	if (GetAsyncKeyState('R') & 0x8000)
+		newPos += mCamera.MoveCamera(speed, pedestal);
 
 	if (!XMVector3Equal(newPos, mCamera.GetPosition()))
 	{
-		CameraCollision(newPos);
+		CollisionCheck(newPos);
 	}
-
+	
 
     if(GetAsyncKeyState('1') & 0x8000)
         mIsWireframe = true;
@@ -1665,8 +1666,7 @@ void ShapesApp::BuildRenderItems()
 	XMMATRIX wall2World = XMMatrixScaling(1.0f, 4.0f, 40.0f) * XMMatrixTranslation(25.0f, 2.5f, -40.0f);
 	SetRenderItemInfo(*wall2Ritem, "box", wall2World, "grass0", RenderLayer::Opaque);
 	SetMazeWallCollision(*wall2Ritem, 1.0f, 4.0f, 40.0f, 25.0f, 2.5f, -40.0);
-	/*wall2Ritem->bounds.Center = { 25.0f, 2.5f, -40.0f };
-	wall2Ritem->bounds.Extents = { 1, 3.5, 20 };*/
+	
 	
 	auto wall3Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall3World = XMMatrixScaling(1.0f, 4.0f, 40.0f) * XMMatrixTranslation(-25.0f, 2.5f, -40.0f);
