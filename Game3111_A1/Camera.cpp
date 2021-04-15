@@ -8,7 +8,7 @@ using namespace DirectX;
 
 Camera::Camera()
 {
-	SetLens(0.25f*MathHelper::Pi, 1.0f, 1.0f, 1000.0f);
+	SetLens(0.25f * MathHelper::Pi, 1.0f, 1.0f, 1000.0f);
 }
 
 Camera::~Camera()
@@ -89,8 +89,8 @@ float Camera::GetFovY()const
 
 float Camera::GetFovX()const
 {
-	float halfWidth = 0.5f*GetNearWindowWidth();
-	return 2.0f*atan(halfWidth / mNearZ);
+	float halfWidth = 0.5f * GetNearWindowWidth();
+	return 2.0f * atan(halfWidth / mNearZ);
 }
 
 float Camera::GetNearWindowWidth()const
@@ -121,8 +121,8 @@ void Camera::SetLens(float fovY, float aspect, float zn, float zf)
 	mNearZ = zn;
 	mFarZ = zf;
 
-	mNearWindowHeight = 2.0f * mNearZ * tanf( 0.5f*mFovY );
-	mFarWindowHeight  = 2.0f * mFarZ * tanf( 0.5f*mFovY );
+	mNearWindowHeight = 2.0f * mNearZ * tanf(0.5f * mFovY);
+	mFarWindowHeight = 2.0f * mFarZ * tanf(0.5f * mFovY);
 
 	XMMATRIX P = XMMatrixPerspectiveFovLH(mFovY, mAspect, mNearZ, mFarZ);
 	XMStoreFloat4x4(&mProj, P);
@@ -182,6 +182,7 @@ void Camera::Strafe(float d)
 	XMVECTOR s = XMVectorReplicate(d);
 	XMVECTOR r = XMLoadFloat3(&mRight);
 	XMVECTOR p = XMLoadFloat3(&mPosition);
+
 	XMStoreFloat3(&mPosition, XMVectorMultiplyAdd(s, r, p));
 
 	mViewDirty = true;
@@ -216,7 +217,7 @@ void Camera::Pitch(float angle)
 
 	XMMATRIX R = XMMatrixRotationAxis(XMLoadFloat3(&mRight), angle);
 
-	XMStoreFloat3(&mUp,   XMVector3TransformNormal(XMLoadFloat3(&mUp), R));
+	XMStoreFloat3(&mUp, XMVector3TransformNormal(XMLoadFloat3(&mUp), R));
 	XMStoreFloat3(&mLook, XMVector3TransformNormal(XMLoadFloat3(&mLook), R));
 
 	mViewDirty = true;
@@ -228,7 +229,7 @@ void Camera::RotateY(float angle)
 
 	XMMATRIX R = XMMatrixRotationY(angle);
 
-	XMStoreFloat3(&mRight,   XMVector3TransformNormal(XMLoadFloat3(&mRight), R));
+	XMStoreFloat3(&mRight, XMVector3TransformNormal(XMLoadFloat3(&mRight), R));
 	XMStoreFloat3(&mUp, XMVector3TransformNormal(XMLoadFloat3(&mUp), R));
 	XMStoreFloat3(&mLook, XMVector3TransformNormal(XMLoadFloat3(&mLook), R));
 
@@ -250,7 +251,7 @@ void Camera::Roll(float angle)
 
 void Camera::UpdateViewMatrix()
 {
-	if(mViewDirty)
+	if (mViewDirty)
 	{
 		XMVECTOR R = XMLoadFloat3(&mRight);
 		XMVECTOR U = XMLoadFloat3(&mUp);
@@ -295,6 +296,31 @@ void Camera::UpdateViewMatrix()
 
 		mViewDirty = false;
 	}
+}
+
+DirectX::XMVECTOR Camera::GetNewPosDifference(float d, moveType type)
+{
+	XMVECTOR s = XMVectorReplicate(d);
+	XMVECTOR dir;
+	XMVECTOR p = XMLoadFloat3(&mPosition);
+
+	switch (type)
+	{
+	case walk:
+		XMFLOAT3 dirF = mLook;
+		dirF.y = 0.0f;
+		dir = XMLoadFloat3(&dirF);
+
+		break;
+	case strafe:
+		dir = XMLoadFloat3(&mRight);
+		break;
+	case pedestal:
+		dir = XMLoadFloat3(&mUp);
+		break;
+	}
+	XMVECTOR curPos = XMLoadFloat3(&mPosition);
+	return  XMVectorMultiplyAdd(s, dir, p) - curPos;
 }
 
 
