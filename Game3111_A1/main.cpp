@@ -681,7 +681,7 @@ void ShapesApp::LoadTextures()
 
 	auto sandTex = std::make_unique<Texture>();
 	sandTex->Name = "sandTex";
-	sandTex->Filename = L"Textures/sand.dds";
+	sandTex->Filename = L"Textures/ground.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), sandTex->Filename.c_str(),
 		sandTex->Resource, sandTex->UploadHeap));
@@ -1566,7 +1566,7 @@ void ShapesApp::BuildRenderItems()
     auto gridRitem = std::make_unique<RenderItem>();
 	XMMATRIX gridWorld = XMMatrixScaling(90.0f, 1.8f, 180.0f) * XMMatrixTranslation(0, 0, -10);
     SetRenderItemInfo(*gridRitem, "box",gridWorld, "sand0", RenderLayer::Opaque);
-	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(10.0f,20.0f, 10.0f));
+	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(20.0f,40.0f, 20.0f));
 
 	mAllRitems.push_back(std::move(gridRitem));
 
