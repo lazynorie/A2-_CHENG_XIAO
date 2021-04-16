@@ -1,4 +1,9 @@
-﻿#include "d3dApp.h"
+﻿//WASD: MOVE THE CAMERA
+//RF: MOVE THE CAMERA'S PEDESTAL
+//MOUSE X :TURN L/R
+//MOUSE Y :LOOK UP AND DOWN
+//
+#include "d3dApp.h"
 #include "MathHelper.h"
 #include "UploadBuffer.h"
 #include "GeometryGenerator.h"
