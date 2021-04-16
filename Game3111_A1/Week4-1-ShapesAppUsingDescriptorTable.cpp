@@ -248,7 +248,7 @@ void ShapesApp::OnResize()
 {
     D3DApp::OnResize();
 
-	mCamera.SetLens(0.4f * MathHelper::Pi, AspectRatio(), 1.0f, 100.0f);
+	mCamera.SetLens(0.3f * MathHelper::Pi, AspectRatio(), 1.0f, 100.0f);
 
 	BoundingFrustum::CreateFromMatrix(mCamFrustum, mCamera.GetProj());
     // The window resized, so update the aspect ratio and recompute the projection matrix.
@@ -370,14 +370,14 @@ void ShapesApp::OnMouseMove(WPARAM btnState, int x, int y)
     {
         // Make each pixel correspond to a quarter of a degree.
         float dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePos.x));
-        //float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
+        float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
 
-		//mCamera.Pitch(dy);
+		mCamera.Pitch(dy);
 		mCamera.RotateY(dx);
 
         // Update angles based on input to orbit camera around box.
         mTheta += dx;
-        //mPhi += dy;
+        mPhi += dy;
 
         // Restrict the angle mPhi.
         mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
@@ -403,7 +403,7 @@ void ShapesApp::CollisionCheck(const XMVECTOR vc)
 {
 	BoundingBox newBounds;
 	XMStoreFloat3(&newBounds.Center, vc);
-	newBounds.Extents = { 1.0f, 1.0f, 1.0f };
+	newBounds.Extents = { 1.25f, 1.25f, 1.25f };
 
 	for (auto& e : mAllRitems)
 	{
@@ -1561,7 +1561,7 @@ void ShapesApp::BuildRenderItems()
     auto gridRitem = std::make_unique<RenderItem>();
 	XMMATRIX gridWorld = XMMatrixScaling(90.0f, 1.8f, 180.0f) * XMMatrixTranslation(0, 0, -10);
     SetRenderItemInfo(*gridRitem, "box",gridWorld, "sand0", RenderLayer::Opaque);
-	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(10.0f, 20.0f, 10.0f));
+	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(10.0f,20.0f, 10.0f));
 
 	mAllRitems.push_back(std::move(gridRitem));
 
@@ -1681,95 +1681,118 @@ void ShapesApp::BuildRenderItems()
 	auto wall5Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall5World = XMMatrixScaling(4.0f, 4.0f, 1.0f) * XMMatrixTranslation(-23.5f, 2.5f, -19.5f);
 	SetRenderItemInfo(*wall5Ritem, "box", wall5World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall5Ritem, 4.0f, 4.0f, 1.0f, -23.5f, 2.5f, -19.5f);
+
 	auto wall6Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall6World = XMMatrixScaling(23.0f, 4.0f, 1.0f) * XMMatrixTranslation(-14.0f, 2.5f, -60.0f);
 	SetRenderItemInfo(*wall6Ritem, "box", wall6World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall6Ritem, 23.0f, 4.0f, 1.0f, -14.0f, 2.5f, -60.0f);
+
 	auto wall7Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall7World = XMMatrixScaling(23.0f, 4.0f, 1.0f) * XMMatrixTranslation(14.0f, 2.5f, -60.0f);
 	SetRenderItemInfo(*wall7Ritem, "box", wall7World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall7Ritem, 23.0f, 4.0f, 1.0f, 14.0f, 2.5f, -60.0f);
+
 	auto wall8Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall8World = XMMatrixScaling(40.0f, 4.0f, 1.0f) * XMMatrixTranslation(0.0f, 2.5f, -55.5f);
 	SetRenderItemInfo(*wall8Ritem, "box", wall8World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall8Ritem, 40.0f, 4.0f, 1.0f, 0.0f, 2.5f, -55.5f);
+
 	auto wall9Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall9World = XMMatrixScaling(21.0f, 4.0f, 1.0f) * XMMatrixTranslation(14.0f, 2.5f, -50.0f);
 	SetRenderItemInfo(*wall9Ritem, "box", wall9World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall9Ritem, 21.0f, 4.0f, 1.0f, 14.0f, 2.5f, -50.0f);
+
 	auto wall10Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall10World = XMMatrixScaling(24.0f, 4.0f, 1.0f) * XMMatrixTranslation(13.0f, 2.5f, -40.0f);
 	SetRenderItemInfo(*wall10Ritem, "box", wall10World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall10Ritem, 24.0f, 4.0f, 1.0f, 13.0f, 2.5f, -40.0f);
+
 	auto wall11Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall11World = XMMatrixScaling(27.0f, 4.0f, 1.0f) * XMMatrixTranslation(3.5f, 2.5f, -30.0f);
 	SetRenderItemInfo(*wall11Ritem, "box", wall11World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall11Ritem, 27.0f, 4.0f, 1.0f, 3.5f, 2.5f, -30.0f);
+
 	auto wall12Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall12World = XMMatrixScaling(10.5f, 4.0f, 1.0f) * XMMatrixTranslation(-20.0f, 2.5f, -35.0f);
 	SetRenderItemInfo(*wall12Ritem, "box", wall12World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall12Ritem, 10.5f, 4.0f, 1.0f, -20.0f, 2.5f, -35.0f);
+
 	auto wall13Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall13World = XMMatrixScaling(5.0f, 4.0f, 1.0f) * XMMatrixTranslation(-12.0f, 2.5f, -50.0f);
 	SetRenderItemInfo(*wall13Ritem, "box", wall13World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall13Ritem, 5.0f, 4.0f, 1.0f, -12.0f, 2.5f, -50.0f);
+
 	auto wall14Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall14World = XMMatrixScaling(5.5f, 4.0f, 1.0f) * XMMatrixTranslation(-22.5f, 2.5f, -47.0f);
 	SetRenderItemInfo(*wall14Ritem, "box", wall14World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall14Ritem, 5.5f, 4.0f, 1.0f, -22.5f, 2.5f, -47.0f);
+
 	auto wall15Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall15World = XMMatrixScaling(1.0f, 4.0f, 15.0f) * XMMatrixTranslation(-19.5f, 2.5f, -47.5f);
 	SetRenderItemInfo(*wall15Ritem, "box", wall15World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall15Ritem, 1.0f, 4.0f, 15.0f, -19.5f, 2.5f, -47.5f);
+
 	auto wall16Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall16World = XMMatrixScaling(1.0f, 4.0f, 16.0f) * XMMatrixTranslation(-14.5f, 2.5f, -42.5f);
 	SetRenderItemInfo(*wall16Ritem, "box", wall16World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall16Ritem, 1.0f, 4.0f, 16.0f, -14.5f, 2.5f, -42.5f);
+
 	auto wall17Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall17World = XMMatrixScaling(1.0f, 4.0f, 20.0f) * XMMatrixTranslation(-9.5f, 2.5f, -40.5f);
 	SetRenderItemInfo(*wall17Ritem, "box", wall17World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall17Ritem, 1.0f, 4.0f, 20.0f, -9.5f, 2.5f, -40.5f);
+
 	auto wall18Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall18World = XMMatrixScaling(1.0f, 4.0f, 20.0f) * XMMatrixTranslation(-3.5f, 2.5f, -40.5f);
 	SetRenderItemInfo(*wall18Ritem, "box", wall18World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall18Ritem, 1.0f, 4.0f, 20.0f, -3.5f, 2.5f, -40.5f);
+
 	auto wall19Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall19World = XMMatrixScaling(23.0f, 4.0f, 1.0f) * XMMatrixTranslation(8.5f, 2.5f, -45.0f);
 	SetRenderItemInfo(*wall19Ritem, "box", wall19World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall19Ritem, 23.0f, 4.0f, 1.0f, 8.5f, 2.5f, -45.0f);
+
 	auto wall20Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall20World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(1.5f, 2.5f, -37.5f);
 	SetRenderItemInfo(*wall20Ritem, "box", wall20World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall20Ritem, 1.0f, 4.0f, 5.0f, 1.5f, 2.5f, -37.5f);
+
 	auto wall21Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall21World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(6.5f, 2.5f, -32.5f);
 	SetRenderItemInfo(*wall21Ritem, "box", wall21World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall21Ritem, 1.0f, 4.0f, 5.0f, 6.5f, 2.5f, -32.5f);
+
 	auto wall22Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall22World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(11.5f, 2.5f, -37.5f);
 	SetRenderItemInfo(*wall22Ritem, "box", wall22World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall22Ritem, 1.0f, 4.0f, 5.0f, 11.5f, 2.5f, -37.5f);
+
 	auto wall23Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall23World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(6.5f, 2.5f, -22.5f);
 	SetRenderItemInfo(*wall23Ritem, "box", wall23World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall23Ritem, 1.0f, 4.0f, 5.0f, 6.5f, 2.5f, -22.5f);
+
 	auto wall24Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall24World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(16.5f, 2.5f, -27.5f);
 	SetRenderItemInfo(*wall24Ritem, "box", wall24World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall24Ritem, 1.0f, 4.0f, 5.0f, 16.5f, 2.5f, -27.5f);
+
 	auto wall25Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall25World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(-6.5f, 2.5f, -22.5f);
 	SetRenderItemInfo(*wall25Ritem, "box", wall25World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall25Ritem, 1.0f, 4.0f, 5.0f, -6.5f, 2.5f, -22.5f);
+
 	auto wall26Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall26World = XMMatrixScaling(10.0f, 4.0f, 1.0f) * XMMatrixTranslation(-11.0f, 2.5f, -25.0f);
 	SetRenderItemInfo(*wall26Ritem, "box", wall26World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall26Ritem, 10.0f, 4.0f, 1.0f, -11.0f, 2.5f, -25.0f);
+
 	auto wall27Ritem = std::make_unique<RenderItem>();
 	XMMATRIX wall27World = XMMatrixScaling(1.0f, 4.0f, 5.0f) * XMMatrixTranslation(-16.0f, 2.5f, -27.0f);
 	SetRenderItemInfo(*wall27Ritem, "box", wall27World, "grass0", RenderLayer::Opaque);
-	
+	SetMazeWallCollision(*wall27Ritem, 1.0f, 4.0f, 5.0f, -16.0f, 2.5f, -27.0f);
+
 	mAllRitems.push_back(std::move(wall2Ritem));
 	mAllRitems.push_back(std::move(wall3Ritem));
 	mAllRitems.push_back(std::move(wall4Ritem));
@@ -1964,7 +1987,7 @@ XMFLOAT3 ShapesApp::GetHillsNormal(float x, float z)const
 {
 	// n = (-df/dx, 1, -df/dz)
 	XMFLOAT3 n(
-		-0.03f * z * cosf(0.1f * x) - 0.1f * cosf(0.1f * z),
+		-0.03f * z * cosf(0.1f * x) -0.1f * cosf(0.1f * z),
 		1.0f,
 		-0.1f * sinf(0.1f * x) + 0.03f * x * sinf(0.1f * z));
 
