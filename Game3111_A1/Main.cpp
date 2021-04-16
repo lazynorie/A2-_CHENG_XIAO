@@ -1,15 +1,17 @@
-﻿//WASD: MOVE THE CAMERA
-//RF: MOVE THE CAMERA'S PEDESTAL
-//MOUSE X :TURN L/R
-//MOUSE Y :LOOK UP AND DOWN
-//
+﻿//Assignment3 Feng Xiao and Jing Yuan Cheng
+//WASD to move
+//R and F to move up and down
+//LMB to look around
+
+
+
 #include "d3dApp.h"
 #include "MathHelper.h"
 #include "UploadBuffer.h"
 #include "GeometryGenerator.h"
 #include "Camera.h"
 #include "FrameResource.h"
-#include "Camera.h"
+
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -404,29 +406,30 @@ void ShapesApp::OnMouseMove(WPARAM btnState, int x, int y)
     mLastMousePos.y = y;
 }
  
-void ShapesApp::CollisionCheck(const XMVECTOR vc)
+void ShapesApp::CollisionCheck(const XMVECTOR v)
 {
-	BoundingBox newBounds;
-	XMStoreFloat3(&newBounds.Center, vc);
-	newBounds.Extents = { 1.25f, 1.25f, 1.25f };
+	//giving cam a bound
+	BoundingBox camBounds;
+	XMStoreFloat3(&camBounds.Center, v);
+	camBounds.Extents = { 1.18f, 1.18f, 1.18f };
 
 	for (auto& e : mAllRitems)
 	{
-		if (e->bounds.Contains(newBounds) != DISJOINT)
+		if (e->bounds.Contains(camBounds) != DISJOINT)
 		{
 			return;
 		}
 	}
 
-	XMFLOAT3 storeNewPos;
-	XMStoreFloat3(&storeNewPos, vc);
-	mCamera.SetPosition(storeNewPos);
+	XMFLOAT3 pPos;
+	XMStoreFloat3(&pPos, v);
+	mCamera.SetPosition(pPos);
 	
 }
 
 void ShapesApp::OnKeyboardInput(const GameTimer& gt)
 {
-	XMVECTOR newPos = mCamera.GetPosition();
+	XMVECTOR pPos = mCamera.GetPosition();
 	const float dt = gt.DeltaTime();
 	const float speed = 10.0f * dt;
 
@@ -449,26 +452,27 @@ void ShapesApp::OnKeyboardInput(const GameTimer& gt)
 		mCamera.Pedestal(-10.0f * dt);*/
 
 	if (GetAsyncKeyState('W') & 0x8000) 
-		newPos += mCamera.MoveCamera(speed, walk);
+		pPos += mCamera.MoveCamera(speed, walk);
 
 	if (GetAsyncKeyState('S') & 0x8000)
-		newPos += mCamera.MoveCamera(-speed, walk);
+		pPos += mCamera.MoveCamera(-speed, walk);
 
 	if (GetAsyncKeyState('A') & 0x8000)
-		newPos += mCamera.MoveCamera(-speed, strafe);
+		pPos += mCamera.MoveCamera(-speed, strafe);
 
 	if (GetAsyncKeyState('D') & 0x8000)
-		newPos += mCamera.MoveCamera(speed, strafe);
+		pPos += mCamera.MoveCamera(speed, strafe);
 
 	if (GetAsyncKeyState('F') & 0x8000)
-		newPos += mCamera.MoveCamera(-speed, pedestal);
+		pPos += mCamera.MoveCamera(-speed, pedestal);
 
 	if (GetAsyncKeyState('R') & 0x8000)
-		newPos += mCamera.MoveCamera(speed, pedestal);
+		pPos += mCamera.MoveCamera(speed, pedestal);
 
-	if (!XMVector3Equal(newPos, mCamera.GetPosition()))
+	//push cam back to pPos when camera is colliding with other bounding boxes
+	if (!XMVector3Equal(pPos, mCamera.GetPosition()))
 	{
-		CollisionCheck(newPos);
+		CollisionCheck(pPos);
 	}
 	
 
@@ -531,28 +535,7 @@ void ShapesApp::UpdateObjectCBs(const GameTimer& gt)
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
 	for (auto& e : mAllRitems)
 	{
-		// Only update the cbuffer data if the constants have changed.  
-		// This needs to be tracked per frame resource.
-
-		/*const auto& instanceData = e->Instances;
-
-		int visibleInstanceCount = 0;
-
-		for (UINT i = 0; i < (UINT)instanceData.size(); ++i)
-		{
-			XMMATRIX world = XMLoadFloat4x4(&instanceData[i].World);
-			XMMATRIX texTransform = XMLoadFloat4x4(&instanceData[i].TexTransform);
-
-			XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(world), world);
-
-			// View space to the object's local space.
-			XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
-
-			// step3: Transform the camera frustum from view space to the object's local space.
-			BoundingFrustum localSpaceFrustum;
-			mCamFrustum.Transform(localSpaceFrustum, viewToLocal);
-			}
-		}*/
+	
 		if (e->NumFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->World);
@@ -881,13 +864,6 @@ void ShapesApp::BuildDescriptorHeaps()
 	srvDesc.Texture2DArray.ArraySize = treeTex->GetDesc().DepthOrArraySize;
 	md3dDevice->CreateShaderResourceView(treeTex.Get(), &srvDesc, hDescriptor);
 
-	// next descriptor
-
-
-	
-
-	// next descriptor
-	
 }
 
 
@@ -1352,9 +1328,6 @@ void ShapesApp::BuildPSOs()
 	opaquePsoDesc.NumRenderTargets = 1;
 	opaquePsoDesc.RTVFormats[0] = mBackBufferFormat;
 
-	//there is abug with F2 key that is supposed to turn on the multisampling!
-//Set4xMsaaState(true);
-	//m4xMsaaState = true;
 
 	opaquePsoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
 	opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
@@ -2021,8 +1994,3 @@ void ShapesApp::SetMazeWallCollision(RenderItem& Ritem, float xLen, float yLen, 
 }
 
 
-//auto wall2Ritem = std::make_unique<RenderItem>();
-//XMMATRIX wall2World = XMMatrixScaling(1.0f, 4.0f, 40.0f) * XMMatrixTranslation(25.0f, 2.5f, -40.0f);
-//SetRenderItemInfo(*wall2Ritem, "box", wall2World, "grass0", RenderLayer::Opaque);
-//wall2Ritem->bounds.Center = { 25.0f, 2.5f, -40.0f };
-//wall2Ritem->bounds.Extents = { 1, 3.5, 20 };
